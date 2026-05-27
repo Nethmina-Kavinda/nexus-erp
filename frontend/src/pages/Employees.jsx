@@ -16,7 +16,7 @@ export default function Employees() {
     () => employeeService.getAll({
       search: search || undefined,
       department: department === 'All' ? undefined : department,
-      limit: 50,
+      limit: 100,
     }),
     [search, department]
   );

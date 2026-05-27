@@ -12,7 +12,7 @@ function formatLKR(amount) {
 
 export default function Payroll() {
   const [month] = useState('2026-03');
-  const { data: employees, loading, error, refetch } = useFetch(() => employeeService.getAll({ limit: 50 }), []);
+  const { data: employees, loading, error, refetch } = useFetch(() => employeeService.getAll({ limit: 100 }), []);
 
   const empList = employees || [];
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Shield, RefreshCw, Check, X, Eye, Zap, Info, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, RefreshCw, Check, X, Eye, Zap, Info, ChevronDown, CheckCircle2, Loader2, BarChart3 } from 'lucide-react';
 import { riskService, decisionService } from '../services/api';
 import { useFetch } from '../hooks/useFetch';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +19,7 @@ export default function RiskScoring() {
   const [riskClass, setRiskClass] = useState('All');
   const [selected, setSelected] = useState(null);
   const [retraining, setRetraining] = useState(false);
+  const [retrainModal, setRetrainModal] = useState(null); // null | 'running' | { result }
   const { hasRole } = useAuth();
   const toast = useToast();
 
@@ -41,14 +42,21 @@ export default function RiskScoring() {
 
   const handleRetrain = async () => {
     setRetraining(true);
+    setRetrainModal('running');
     try {
-      toast.info('Retraining with HR-corrected labels…', 'Stage 2');
       const res = await riskService.retrain('stage_2');
-      const acc = (res.data.data?.accuracy_validation * 100).toFixed(1);
-      toast.success(`Validation accuracy: ${acc}%`, 'Model updated');
+      const d = res.data.data || res.data;
+      setRetrainModal({
+        stage: d.stage || 'stage_2',
+        accuracy_test: d.accuracy_test,
+        accuracy_validation: d.accuracy_validation,
+        f1_macro: d.f1_macro,
+        samples_used: d.samples_used,
+      });
       refetchMl();
       refetch();
     } catch (err) {
+      setRetrainModal(null);
       toast.error(err.response?.data?.error || 'Retrain failed');
     } finally {
       setRetraining(false);
@@ -219,8 +227,9 @@ export default function RiskScoring() {
                   return (
                     <tr
                       key={score._id}
+                      onClick={() => setSelected(score)}
                       className={clsx(
-                        'border-b border-border/40 hover:bg-surface-2/50 transition-colors',
+                        'border-b border-border/40 hover:bg-surface-2/50 transition-colors cursor-pointer',
                         isCritical && 'border-l-[3px] border-l-accent-red bg-accent-red/[0.03]'
                       )}
                     >
@@ -290,7 +299,7 @@ export default function RiskScoring() {
                           <span className="text-[12px] text-text-muted">—</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           <IconBtn onClick={() => setSelected(score)} title="View details" tone="blue">
                             <Eye size={14} strokeWidth={2} />
@@ -322,6 +331,13 @@ export default function RiskScoring() {
           onClose={() => setSelected(null)}
           onDecision={handleDecision}
           canDecide={hasRole('admin', 'hr_manager')}
+        />
+      )}
+
+      {retrainModal && (
+        <RetrainModal
+          state={retrainModal}
+          onClose={() => setRetrainModal(null)}
         />
       )}
     </div>
@@ -390,6 +406,137 @@ function IconBtn({ onClick, title, tone, children }) {
     >
       {children}
     </button>
+  );
+}
+
+/* ─── Retrain progress / results modal ─── */
+
+const TRAIN_STEPS = [
+  'Fetching HR-corrected labels from database',
+  'Applying SMOTE to balance risk classes',
+  'Training Random Forest (200 trees)',
+  'Evaluating on held-out test month',
+];
+
+function RetrainModal({ state, onClose }) {
+  const running = state === 'running';
+  const [visibleSteps, setVisibleSteps] = useState(running ? 0 : TRAIN_STEPS.length);
+
+  useEffect(() => {
+    if (!running) { setVisibleSteps(TRAIN_STEPS.length); return; }
+    setVisibleSteps(0);
+    const timings = [0, 1800, 4000, 7000];
+    const timers = timings.map((delay, i) =>
+      setTimeout(() => setVisibleSteps(i + 1), delay)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [running]);
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 fade-in">
+      <div className="relative w-full max-w-md bg-surface-1 border border-border rounded-xl shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className={clsx(
+          'px-7 pt-7 pb-6 border-b border-border',
+          !running && 'border-accent-teal/20'
+        )}>
+          <div className="flex items-center gap-3">
+            <div className={clsx(
+              'w-10 h-10 rounded-lg flex items-center justify-center shrink-0',
+              running ? 'bg-accent-purple/15 border border-accent-purple/30' : 'bg-accent-teal/15 border border-accent-teal/30'
+            )}>
+              {running
+                ? <Loader2 size={18} className="text-accent-purple animate-spin" strokeWidth={2} />
+                : <CheckCircle2 size={18} className="text-accent-teal" strokeWidth={2} />}
+            </div>
+            <div>
+              <div className="text-[15px] font-heading font-bold text-white leading-tight">
+                {running ? 'Retraining Model…' : 'Model Updated'}
+              </div>
+              <div className="text-[12px] text-text-muted mt-0.5">
+                Stage 2 · HR-corrected labels
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-7 py-6 space-y-5">
+          {/* Steps */}
+          <div className="space-y-3">
+            {TRAIN_STEPS.map((step, i) => {
+              const done = !running || i < visibleSteps - 1;
+              const active = running && i === visibleSteps - 1;
+              const pending = running && i >= visibleSteps;
+              return (
+                <div key={i} className={clsx('flex items-center gap-3 transition-opacity duration-500', pending && 'opacity-30')}>
+                  <div className="w-5 h-5 rounded-full shrink-0 flex items-center justify-center">
+                    {done && <CheckCircle2 size={18} className="text-accent-teal" strokeWidth={2} />}
+                    {active && <Loader2 size={18} className="text-accent-purple animate-spin" strokeWidth={2} />}
+                    {pending && <div className="w-4 h-4 rounded-full border-2 border-border" />}
+                  </div>
+                  <span className={clsx(
+                    'text-[13px] font-medium',
+                    done ? 'text-white' : active ? 'text-accent-purple' : 'text-text-muted'
+                  )}>
+                    {step}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Results — only when done */}
+          {!running && state?.accuracy_test !== undefined && (
+            <div className="pt-2 border-t border-border space-y-3">
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 size={13} className="text-accent-blue" strokeWidth={2} />
+                <span className="text-[12px] font-heading font-semibold text-white uppercase tracking-wider">Training Results</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <ResultCard label="Test Accuracy" value={`${(state.accuracy_test * 100).toFixed(1)}%`} color="teal" />
+                {state.accuracy_validation && (
+                  <ResultCard label="Val Accuracy" value={`${(state.accuracy_validation * 100).toFixed(1)}%`} color="blue" />
+                )}
+                {state.f1_macro && (
+                  <ResultCard label="F1 (macro)" value={state.f1_macro.toFixed(3)} color="purple" />
+                )}
+                {state.samples_used && (
+                  <ResultCard label="Samples Used" value={state.samples_used.toLocaleString()} color="white" />
+                )}
+              </div>
+              <p className="text-[11.5px] text-text-muted leading-relaxed pt-1">
+                Model is live. New <span className="text-accent-purple font-mono">/predict</span> calls will use this updated model.
+              </p>
+            </div>
+          )}
+
+          {!running && (
+            <button
+              onClick={onClose}
+              className="w-full bg-surface-2 hover:bg-surface-3 text-text-secondary hover:text-white py-2.5 rounded-lg text-[13px] font-heading font-semibold transition-colors"
+            >
+              Close
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResultCard({ label, value, color }) {
+  const colorClass = {
+    teal: 'text-accent-teal',
+    blue: 'text-accent-blue',
+    purple: 'text-accent-purple',
+    white: 'text-white',
+  }[color];
+  return (
+    <div className="bg-surface-2 border border-border rounded-lg px-4 py-3">
+      <div className={clsx('text-[20px] font-heading font-bold tabular-nums leading-tight', colorClass)}>{value}</div>
+      <div className="text-[10px] text-text-muted uppercase tracking-wider mt-1 font-heading">{label}</div>
+    </div>
   );
 }
 
