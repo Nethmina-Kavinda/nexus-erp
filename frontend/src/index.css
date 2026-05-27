@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surface */
+  --color-bg: #0A0E1A;
+  --color-surface-1: #111827;
+  --color-surface-2: #1A2236;
+  --color-surface-3: #1E2D45;
+
+  /* Brand + accent */
+  --color-accent-blue: #3B82F6;
+  --color-accent-purple: #8B5CF6;
+  --color-accent-teal: #14B8A6;
+  --color-accent-amber: #F59E0B;
+  --color-accent-red: #EF4444;
+
+  /* Text */
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-text-faint: #475569;
+
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.16);
+
+  /* Fonts */
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  html, body {
+    font-family: var(--font-body);
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.05) 25%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.pulse-critical { animation: pulse-critical 2s ease-in-out infinite; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fade-in 0.3s ease-out; }
+
+/* Form resets */
+input, select, textarea, button { font-family: inherit; }
+input:focus, select:focus, textarea:focus { outline: none; }
