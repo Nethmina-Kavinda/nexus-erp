@@ -80,7 +80,7 @@ Risk class distribution across the 600 feature vectors: Low = 40%, Medium = 35%,
 
 ### 3.3.3 Data Generation Pipeline
 
-Data was generated using six sequential Node.js seeding scripts:
+Data was generated using eight sequential Node.js seeding scripts:
 
 1. `01_seedEmployees.js` — creates 100 employee records with randomised `risk_bias` values, stored in the MongoDB `Employees` collection
 2. `02_seedAttendance.js` — generates 6 months of daily attendance per employee, with absence probability and late-arrival frequency governed by the employee's `risk_bias`
@@ -88,8 +88,10 @@ Data was generated using six sequential Node.js seeding scripts:
 4. `04_seedSocialScores.js` — generates synthetic `social_score` values via Gaussian sub-score modelling (see Section 4.5 for full detail)
 5. `05_seedFeatureVectors.js` — aggregates attendance, payroll, and social data into normalised 8-feature vectors per employee per month
 6. `06_seedRiskScores.js` — applies the weighted composite formula to produce initial risk scores and classification labels
+7. `07_seedHRDecisions.js` — generates 600 HR decision records (526 accepted, 74 corrected) simulating the human-in-the-loop feedback that drives Stage 2 retraining
+8. `08_seedInventory.js` — seeds 15 inventory items (8 raw materials, 7 finished goods) with 69 stock transactions
 
-All six scripts execute deterministically from a fixed random seed, ensuring reproducibility of the dataset. The ML model can be retrained at any time and will produce statistically consistent results.
+All eight scripts execute deterministically from a fixed random seed, ensuring reproducibility of the dataset. The ML model can be retrained at any time and will produce statistically consistent results.
 
 ---
 

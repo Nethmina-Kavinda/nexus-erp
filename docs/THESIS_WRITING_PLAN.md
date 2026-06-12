@@ -4,6 +4,22 @@
 **Student:** Nethmina Kavinda Bandara
 **University:** NSBM Green University — BSc (Hons) Computer Science
 **Methodology:** Peffers' Design Science Research Methodology (DSRM)
+**Last Updated:** 2026-06-12
+
+---
+
+## Progress Tracker
+
+| Chapter | Status | File | Words |
+|---|---|---|---|
+| Chapter 1 — Introduction | ⬜ TODO | — | ~2,500 |
+| Chapter 2 — Literature Review | ✅ COMPLETE | `research_docs/SLR.md` | ~5,000 |
+| Chapter 3 — Methodology | ✅ COMPLETE | `docs/chapters/chapter_3_methodology.md` | ~2,050 |
+| Chapter 4 — Design & Implementation | ⬜ TODO | — | ~6,000 |
+| Chapter 5 — Evaluation & Results | ⬜ TODO | — | ~5,000 |
+| Chapter 6 — Conclusion | ⬜ TODO | — | ~1,500 |
+
+**Total written:** ~7,050 / ~22,500 words (~31%)
 
 ---
 
@@ -16,18 +32,19 @@ Each chapter is broken into sections. For every section you get:
 - **Numbers** — the exact figures to use (don't guess)
 - **Output** — what tables, figures, or code blocks to include
 
-Chapter 2 (SLR) is already fully written in `research_docs/SLR.md`. Copy it into your thesis document and format it. Start writing from Chapter 1.
+Chapter 2 (SLR) is already fully written in `research_docs/SLR.md`. Copy it into your thesis document and format it.
+Chapter 3 (Methodology) is fully written in `docs/chapters/chapter_3_methodology.md`.
 
 **Recommended writing order:**
-1. Chapter 3 (Methodology) — shortest, most mechanical, get it done first
-2. Chapter 4 (Design & Implementation) — core content, longest chapter
-3. Chapter 5 (Evaluation) — all data is ready, just present it
-4. Chapter 1 (Introduction) — write last so it matches what you actually built
-5. Chapter 6 (Conclusion) — follows from Chapter 5
+1. ✅ Chapter 3 (Methodology) — DONE
+2. ⬜ Chapter 4 (Design & Implementation) — **NEXT** — core content, longest chapter
+3. ⬜ Chapter 5 (Evaluation) — all data is ready, just present it
+4. ⬜ Chapter 1 (Introduction) — write last so it matches what you actually built
+5. ⬜ Chapter 6 (Conclusion) — follows from Chapter 5
 
 ---
 
-## Chapter 1 — Introduction (~2,500 words)
+## Chapter 1 — Introduction (~2,500 words) ⬜ TODO
 
 ### 1.1 Background and Motivation
 
@@ -98,11 +115,10 @@ One paragraph per chapter explaining what each chapter does. This is the roadmap
 
 ---
 
-## Chapter 2 — Literature Review (~5,000 words)
+## Chapter 2 — Literature Review (~5,000 words) ✅ COMPLETE
 
-**Status: COMPLETE.**
-
-The full SLR is written in `research_docs/SLR.md`. Copy it into your thesis document and apply the university's formatting template (font, heading styles, page margins).
+**File:** `research_docs/SLR.md`
+**Action:** Copy into thesis document and apply university formatting template (font, heading styles, page margins). No new writing needed.
 
 **Sections already in the document:**
 - 2.1 Introduction
@@ -121,9 +137,14 @@ The full SLR is written in `research_docs/SLR.md`. Copy it into your thesis docu
 
 ---
 
-## Chapter 3 — Methodology (~2,000 words)
+## Chapter 3 — Methodology (~2,000 words) ✅ COMPLETE
 
-### 3.1 Research Philosophy and Approach
+**File:** `docs/chapters/chapter_3_methodology.md`
+**Word count:** ~2,050 words
+**Sections written:** 3.1 Research Philosophy · 3.2 DSRM · 3.3 Data Strategy · 3.4 Development Approach · 3.5 Evaluation Strategy · 3.6 Ethical Considerations · 3.7 Summary
+**Action:** Copy into thesis document and apply formatting. No new writing needed.
+
+### 3.1 Research Philosophy and Approach ✅
 
 **What to write:**
 This is a design science project — its goal is to produce a functional IT artefact that solves a real problem. DSR (Design Science Research) is the appropriate methodology because it is specifically designed for artefact-building research in information systems. Contrast with empirical/positivist research (surveys, experiments on existing phenomena) — those are for studying what exists, not building what doesn't yet exist.
@@ -132,7 +153,7 @@ This is a design science project — its goal is to produce a functional IT arte
 
 ---
 
-### 3.2 Design Science Research Methodology (DSRM)
+### 3.2 Design Science Research Methodology (DSRM) ✅
 
 **What to write:**
 Introduce Peffers' 6-stage DSRM model. Include a figure showing the 6 stages in sequence (you can draw a simple flow diagram). Then apply each stage to your project:
@@ -148,7 +169,7 @@ Introduce Peffers' 6-stage DSRM model. Include a figure showing the 6 stages in 
 
 ---
 
-### 3.3 Data Collection Strategy
+### 3.3 Data Collection Strategy ✅
 
 **What to write:**
 Explain why synthetic data was used rather than real employee data. Three reasons:
@@ -166,14 +187,14 @@ Cite IBM HR Analytics dataset precedent — it is also synthetic and used in doz
 
 ---
 
-### 3.4 Development Approach
+### 3.4 Development Approach ✅
 
 **What to write:**
 Iterative, module-by-module development. Each module (Attendance, Payroll, Inventory, Risk Scoring) was built, tested, and integrated before the next. The ML pipeline was developed in two stages: Stage 1 (formula labels → cold-start baseline), Stage 2 (HR-corrected labels → human-in-the-loop improvement).
 
 ---
 
-### 3.5 Evaluation Strategy
+### 3.5 Evaluation Strategy ✅
 
 **What to write:**
 Two-track evaluation:
@@ -184,20 +205,20 @@ Two-track evaluation:
 
 ---
 
-### 3.6 Ethical Considerations
+### 3.6 Ethical Considerations ✅
 
 **What to write:**
 Copy the 7 points from `research_docs/SOURCE_OF_TRUTH.md` Section 13. Key points: all data is synthetic, `social_data_source` field is set to `'synthetic'`, ML system is decision-support only (no automated adverse action), employee consent required before any live social data collection.
 
 ---
 
-## Chapter 4 — Design and Implementation (~6,000 words)
+## Chapter 4 — Design and Implementation (~6,000 words) ⬜ TODO — NEXT
 
 This is the longest chapter. Give ~60% of the space to the ML/social score sections (SO4, SO5, SO6). Keep ERP module sections concise — describe with diagrams and tables, not lengthy prose.
 
 ---
 
-### 4.1 System Architecture
+### 4.1 System Architecture ⬜
 
 **What to write:**
 Describe the 4-tier architecture. Include an architecture diagram (draw this):
@@ -228,7 +249,7 @@ Include the tech stack table:
 
 ---
 
-### 4.2 Database Design
+### 4.2 Database Design ⬜
 
 **What to write:**
 List all 9 MongoDB collections with their key fields and relationships. Include an entity relationship diagram (draw this).
@@ -249,7 +270,7 @@ List all 9 MongoDB collections with their key fields and relationships. Include 
 
 ---
 
-### 4.3 Security Architecture
+### 4.3 Security Architecture ⬜
 
 **What to write:**
 Short section (300 words). JWT-based authentication, bcrypt password hashing, 4-role RBAC (Admin, HR Manager, Manager, Employee), OTP email verification for login.
@@ -261,7 +282,7 @@ Include the RBAC matrix table from `backend/README.md`.
 
 ---
 
-### 4.4 ERP Modules (concise — 3 subsections)
+### 4.4 ERP Modules ⬜
 
 #### 4.4.1 Attendance and Payroll Module
 
@@ -307,7 +328,7 @@ Automated email alert sent to admin/manager roles via Nodemailer. Include screen
 
 ---
 
-### 4.5 Synthetic Social Score Model ← HIGH RESEARCH WEIGHT
+### 4.5 Synthetic Social Score Model ⬜ ← HIGH RESEARCH WEIGHT
 
 This section is one of your three novelty pillars. Write it deeply.
 
@@ -381,7 +402,7 @@ The MongoDB SocialScore schema includes a `social_data_source` field set to `'sy
 
 ---
 
-### 4.6 Risk Scoring Pipeline ← HIGH RESEARCH WEIGHT
+### 4.6 Risk Scoring Pipeline ⬜ ← HIGH RESEARCH WEIGHT
 
 #### 4.6.1 Feature Engineering
 
@@ -515,7 +536,7 @@ If WRL ≥ 30%, an automated email alert is dispatched to all admin and HR Manag
 
 ---
 
-### 4.7 User Interface
+### 4.7 User Interface ⬜
 
 **What to write:**
 Short section (300 words). Dark navy theme, 7 pages, role-based navigation (admin sees all modules; employees see only their own data). List the pages with their corresponding screenshot references.
@@ -534,7 +555,7 @@ Short section (300 words). Dark navy theme, 7 pages, role-based navigation (admi
 
 ---
 
-## Chapter 5 — Evaluation and Results (~5,000 words)
+## Chapter 5 — Evaluation and Results (~5,000 words) ⬜ TODO
 
 All data and artifacts for this chapter are already generated in `ml-service/evaluation_output/`. Run `python evaluate.py` inside the activated venv to regenerate them at any time.
 
@@ -542,7 +563,7 @@ All data and artifacts for this chapter are already generated in `ml-service/eva
 
 ---
 
-### 5.1 Evaluation Framework
+### 5.1 Evaluation Framework ⬜
 
 **What to write:**
 Two-track evaluation framework:
@@ -552,7 +573,7 @@ Two-track evaluation framework:
 
 ---
 
-### 5.2 ML Evaluation — Stage 1
+### 5.2 ML Evaluation — Stage 1 ⬜
 
 **What to write:**
 Stage 1 trains on formula-derived labels (cold-start baseline before any HR feedback).
@@ -571,7 +592,7 @@ Include figure `feature_importance_stage1.png` — show which features the Stage
 
 ---
 
-### 5.3 ML Evaluation — Stage 2
+### 5.3 ML Evaluation — Stage 2 ⬜
 
 **What to write:**
 Stage 2 retrains on HR-corrected labels — decisions where HR managers overrode the formula.
@@ -593,7 +614,7 @@ Include figure `feature_importance_stage2.png`.
 
 ---
 
-### 5.4 Stage 1 vs Stage 2 Comparison
+### 5.4 Stage 1 vs Stage 2 Comparison ⬜
 
 **What to write:**
 This is the centrepiece of your evaluation. Include a comparison table:
@@ -611,7 +632,7 @@ Include figure `shap_drift.png` — shows which features gained or lost importan
 
 ---
 
-### 5.5 SHAP Feature Analysis
+### 5.5 SHAP Feature Analysis ⬜
 
 **What to write:**
 Include figure `shap_summary.png` — mean absolute SHAP values per feature for Stage 2. Interpret the top 3 features by SHAP importance and explain what each means for HR.
@@ -625,7 +646,7 @@ For example (check your actual shap_summary.png for the real ranking):
 
 ---
 
-### 5.6 Social Score Validation (answers RQ3)
+### 5.6 Social Score Validation ⬜
 
 **What to write:**
 Validate that the synthetic social_score follows the intended statistical properties.
@@ -646,21 +667,21 @@ Include all four figures. This validation demonstrates that the synthetic signal
 
 ---
 
-### 5.7 Feature Correlation Analysis
+### 5.7 Feature Correlation Analysis ⬜
 
 **What to write:**
 Include figure `feature_correlation.png`. Discuss the correlation structure of the 8-feature vector. Ideal: moderate correlations (features are related but not redundant). If any features are highly correlated (r > 0.8), note it as a limitation for future work. If correlations are low-to-moderate, it confirms the 8 features contribute independent information to the model.
 
 ---
 
-### 5.8 n_estimators Tuning
+### 5.8 n_estimators Tuning ⬜
 
 **What to write:**
 Include figure `n_estimators_curve.png` showing accuracy vs. number of trees (50–500). Explain that the curve plateaus around 150–200 trees, justifying the choice of n_estimators=200 as a good balance between accuracy and computational efficiency.
 
 ---
 
-### 5.9 Functional Testing
+### 5.9 Functional Testing ⬜
 
 **What to write:**
 Short section (500 words). Test table format:
@@ -675,7 +696,7 @@ Short section (500 words). Test table format:
 
 ---
 
-### 5.10 Discussion of Results
+### 5.10 Discussion of Results ⬜
 
 **What to write:**
 Bring together the findings and map them back to the research questions:
@@ -688,9 +709,9 @@ Note the accuracy difference from IBM dataset benchmarks is expected — the IBM
 
 ---
 
-## Chapter 6 — Conclusion (~1,500 words)
+## Chapter 6 — Conclusion (~1,500 words) ⬜ TODO
 
-### 6.1 Summary of Contributions
+### 6.1 Summary of Contributions ⬜
 
 **What to write:**
 Three paragraphs, one per research contribution/novelty pillar.
@@ -703,14 +724,14 @@ Three paragraphs, one per research contribution/novelty pillar.
 
 ---
 
-### 6.2 Research Questions Answered
+### 6.2 Research Questions Answered ⬜
 
 **What to write:**
 A table mapping each RQ to the finding that answers it. One sentence per RQ.
 
 ---
 
-### 6.3 Limitations
+### 6.3 Limitations ⬜
 
 **What to write:**
 Copy and expand from `research_docs/SOURCE_OF_TRUTH.md` Section 14. Key limitations:
@@ -722,7 +743,7 @@ Copy and expand from `research_docs/SOURCE_OF_TRUTH.md` Section 14. Key limitati
 
 ---
 
-### 6.4 Future Work
+### 6.4 Future Work ⬜
 
 **What to write:**
 At minimum four items:
@@ -733,7 +754,7 @@ At minimum four items:
 
 ---
 
-### 6.5 Concluding Remarks
+### 6.5 Concluding Remarks ⬜
 
 **What to write:**
 One paragraph. Summarise what was achieved, reiterate the three contributions, and note that NEXUS ERP demonstrates that a lightweight MERN-stack ERP can serve as a complete decision-support platform — combining operational automation with ML-powered risk analytics — at a cost accessible to SMEs.
@@ -769,10 +790,10 @@ Keep this section open when writing. These are the exact numbers to use througho
 ### System
 | Item | Value |
 |---|---|
-| API endpoints (Node) | 21 |
+| API endpoints (Node) | 22 |
 | Flask endpoints | 3 |
 | MongoDB collections | 9 |
-| Frontend pages | 7 |
+| Frontend pages | 8 |
 | ML features | 8 |
 | RF trees | 200 |
 

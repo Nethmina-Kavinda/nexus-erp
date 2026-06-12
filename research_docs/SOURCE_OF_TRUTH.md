@@ -5,6 +5,7 @@
 **University:** NSBM Green University — BSc (Hons) Computer Science
 **Methodology:** Design Science Research (Peffers' DSRM)
 **Tech Stack:** MERN (MongoDB, Express.js, React.js, Node.js) + Python Flask ML Microservice
+**Last Updated:** 2026-06-12 (reflects fully implemented and tested system)
 
 ---
 
@@ -222,15 +223,27 @@ Decisions stored → Model retrained on accumulated feedback
 
 ### Pillar 1: Attendance + Payroll
 
-**Payroll Computation Model:**
+**Payroll Computation Model (exact implemented constants):**
 ```
-GrossSalary = (WorkingHours × HourlyRate) + (OvertimeHours × HourlyRate × 1.5) + Allowances
-NetSalary   = GrossSalary − Deductions (EPF 8%, ETF 3%, tax)
-LatePenalty  = LateMinutes × PenaltyRate
-FinalSalary  = NetSalary − LatePenalty
+STANDARD_HOURS_PER_DAY  = 8
+OVERTIME_MULTIPLIER     = 1.5
+EPF_RATE                = 0.08   (8% employee provident fund)
+ETF_RATE                = 0.03   (3% employee trust fund)
+PENALTY_RATE_PER_MINUTE = LKR 50
+
+gross_salary = (present_days × 8 × hourly_rate)
+             + (overtime_hours × hourly_rate × 1.5)
+             + allowances
+
+epf          = gross_salary × 0.08
+etf          = gross_salary × 0.03
+net_salary   = gross_salary − epf − etf
+
+late_penalty = total_late_minutes × 50
+final_salary = max(0, net_salary − late_penalty)   ← floored at 0, no negative payslips
 ```
 
-Payroll rules (overtime multiplier, deduction percentages, penalty rates) are parameterised for enterprise-specific customisation.
+All monetary values rounded to 2 decimal places (LKR cents). EPF and ETF are statutory deductions specific to Sri Lankan labour law. Late penalty deducted after net salary computation to prevent double-counting.
 
 **Research relevance:** Attendance and payroll data generate 5 of the 8 ML features (absence_rate, late_rate, overtime_ratio, productivity_index, payroll_variance).
 
@@ -275,10 +288,29 @@ sub_score_d = clamp(N(μ_d + β, σ_d), 0, 1)
 
 Where:
 - `N(μ, σ)` = random draw from Normal (Gaussian) distribution
-- `μ_d` = base mean for dimension d (e.g., job_search μ = 0.25)
+- `μ_d` = base mean for dimension d (see exact values below)
 - `β` = employee's risk_bias (0.0–0.5), set during seeding
-- `σ_d` = standard deviation (typically 0.10–0.15)
+- `σ_d` = standard deviation (see exact values below)
 - `clamp` = force result into [0.0, 1.0]
+
+**Exact VAR Model Parameters (implemented in seed step 4):**
+
+| Sub-score | Base Mean (μ) | Std Dev (σ) | Composite Weight |
+|---|---|---|---|
+| `job_search` | 0.25 | 0.12 | 0.35 |
+| `post_drop` | 0.30 | 0.10 | 0.25 |
+| `network_growth` | 0.20 | 0.10 | 0.20 |
+| `sentiment` | 0.20 | 0.10 | 0.20 |
+
+**VAR Autoregressive Persistence:**
+```
+ALPHA = 0.65   (autoregressive smoothing coefficient)
+current_month = ALPHA × previous_month + (1 − ALPHA) × new_draw
+```
+This prevents wild month-to-month swings and models the gradual buildup of disengagement signals over time.
+
+**Cholesky Decomposition (inter-sub-score correlation):**
+Sub-scores are not independent — an employee actively job-searching also tends to post less. A 4×4 correlation matrix is Cholesky-decomposed to inject controlled correlation into the multivariate draws.
 
 **Why Gaussian (not uniform random):**
 - Uniform: wild swings (0.12, 0.87, 0.03) — unrealistic
@@ -330,19 +362,67 @@ RiskScore = (w1×absence + w2×late + w3×overtime + w4×productivity + w5×payr
 | 76–100 | Critical | Immediate attention required |
 
 **Step 3 — Random Forest Classifier (Flask Microservice):**
-- 200 decision trees, balanced class weights
-- Input: 8-feature vector
-- Output: predicted risk class + per-feature importance values
-- Endpoints: `/predict`, `/train`, `/health`
-- Connected to Node.js backend via REST
+
+Exact hyperparameters:
+```python
+RandomForestClassifier(
+    n_estimators  = 200,          # tuned via n_estimators_curve (50–500 sweep)
+    class_weight  = 'balanced',   # compensates for Low-class majority
+    random_state  = 42,           # reproducibility
+    max_depth     = None,         # unlimited — trees grow to pure leaves
+    min_samples_split = 2,        # default
+)
+```
+
+**SMOTE Oversampling (applied to training set only):**
+```python
+k_neighbors = min(5, minority_class_size − 1)
+random_state = 42
+```
+SMOTE is applied only when the minority class has more than 1 sample. It is never applied to the validation or test sets to prevent data leakage.
+
+**Temporal Train/Val/Test Split:**
+```
+Seed months: ['2025-10','2025-11','2025-12','2026-01','2026-02','2026-03']
+Train:  months 1–4  (2025-10 to 2026-01)
+Val:    month 5     (2026-02)
+Test:   month 6     (2026-03)
+```
+This temporal split prevents data leakage — the model is never evaluated on months it trained on.
+
+**Feature vector order (must match config.py — load-bearing):**
+```
+[absence_rate, late_rate, overtime_ratio, productivity_index,
+ payroll_variance, social_score, tenure_months, department_risk]
+```
+
+**SHAP Explainability:**
+- Uses `TreeExplainer` (exact, not approximate)
+- Returns `shap_base_value` + 8 individual feature contributions per prediction
+- `top_drivers` extracted: top 3 features ranked by |SHAP|, labelled high/moderate/low
+
+**Feature Engineering Normalization (seed step 5):**
+- All 8 features normalised to [0,1] using min-max scaling across the full dataset
+- `productivity_index` = 1 − (actual_hours / expected_hours) — inverted so higher = more risk
+- `tenure_months` = 1 − (tenure / max_tenure) — inverted so newer employee = higher risk
+- `department_risk` = leave-one-out peer average (employee excluded from own dept average to prevent leakage)
+- `payroll_variance` = |current_salary − previous_salary| / previous_salary
+- Window-informed blending: `0.6 × current + 0.3 × prev_month + 0.1 × two_months_back`
 
 **Step 4 — HR Feedback Loop:**
 - HR manager sees prediction on dashboard
 - Clicks Accept or Reject
 - Decision stored in HRDecision collection
 - Accumulated decisions become ground truth
-- HR triggers retrain via POST /api/ml/retrain → Flask /train
+- HR triggers retrain via `POST /api/risk/retrain` → Flask `/train`
 - Model improves from human judgement over time
+
+**Confidence Labels:**
+```
+Strong:   ML confidence > 0.60
+Moderate: 0.40 ≤ confidence ≤ 0.60
+Uncertain: confidence < 0.40
+```
 
 **Workforce Risk Level (WRL) — Portfolio Metric:**
 ```
@@ -376,13 +456,37 @@ There is no external dataset. All data is generated through MongoDB seeding scri
 4. **Validated** — Gaussian distribution verified via mean, std dev, range checks
 5. **Precedented** — IBM's HR Analytics dataset (widely cited in literature) is also synthetic
 
-### Dataset Scale
+### Dataset Scale (fully implemented — updated 2026-06-12)
 
-- 20 employees (sufficient for research prototype)
-- 6 months of records per employee
-- ~120 social score records total
-- ~120 feature vectors total
-- ~120 attendance records per employee (daily)
+**100 employees × 6 months** across 5 departments (20 per department):
+`Engineering · Marketing · Finance · Operations · HR`
+
+**Seed months:** October 2025 – March 2026 (`2025-10` through `2026-03`)
+
+| Collection | Records | Notes |
+|---|---|---|
+| Employees | 100 | 20 per department |
+| Attendance | ~13,000 | Daily records (6 months × ~100 working days) |
+| Payroll | 600 | 6 months × 100 employees (upserted, idempotent) |
+| SocialScores | 600 | 6 months × 100 employees |
+| EmployeeFeatures | 600 | 6 months × 100 employees (normalised vectors) |
+| RiskScores | 600 | 6 months × 100 employees (formula-derived labels) |
+| HRDecisions | 600 | 526 accepted (87.7%), 74 rejected (12.3% correction rate) |
+| Inventory | 15 items + 69 transactions | 8 raw materials, 7 finished goods |
+
+**Risk bias distribution across 100 employees:**
+- Low bias (≤0.05): 40 employees
+- Medium bias (0.06–0.15): 35 employees
+- High bias (0.16–0.35): 18 employees
+- Critical bias (>0.35): 7 employees
+
+**Formula scoring output (from seeded feature vectors):**
+- Low: 250 records · Medium: 341 records · High: 9 records · Critical: 0 records
+
+**HR correction types in seed (74 total rejections):**
+- Medium → High: 70 (high risk_bias employees underclassified by formula)
+- Low → Medium: 2
+- Medium → Low: 2
 
 ---
 
@@ -481,7 +585,7 @@ Total target: **20-25 papers minimum** (proposal only has 13 references — must
 | Jurisdiction-specific payroll | Sri Lankan EPF/ETF rules are hardcoded; other countries need rule customisation |
 | RF trained on synthetic data | Predictive accuracy in production will improve only as HR feedback accumulates real ground truth |
 | No banking API integration | Payroll disbursement (actual salary transfer) is not included |
-| 20 employees only | Sufficient for prototype; production deployment needs testing at scale |
+| 100-employee synthetic dataset | Sufficient for ML evaluation and prototype demonstration; production deployment would benefit from testing at larger scale with diverse real-world data distributions |
 | No mobile app | Frontend is web-only (React); a mobile version is future work |
 
 ---
@@ -537,39 +641,44 @@ Total target: **20-25 papers minimum** (proposal only has 13 references — must
 
 ## 17. API Endpoint Overview
 
-### Node.js Backend (~15-18 REST endpoints)
+### Node.js Backend (22 REST endpoints)
 
-| Category | Endpoint | Method | Description |
+All endpoints prefixed `/api`. Protected endpoints require `Authorization: Bearer <JWT>`.
+
+| Category | Endpoint | Method | Auth | Description |
+|---|---|---|---|---|
+| **Auth** | /api/auth/register | POST | Public | Register new employee account |
+| | /api/auth/login | POST | Public | Login, returns JWT token |
+| | /api/auth/verify-otp | POST | Public | Generate or verify email OTP |
+| | /api/auth/me | GET | Protected | Get current authenticated user |
+| **Employees** | /api/employees | GET | Protected | List employees (search, dept, role, pagination) |
+| | /api/employees/:id | GET | Protected | Get single employee by ID |
+| | /api/employees | POST | Admin | Create employee |
+| | /api/employees/:id | PUT | Admin, HR | Update employee |
+| | /api/employees/:id | DELETE | Admin | Soft-delete employee (sets is_active=false) |
+| **Attendance** | /api/attendance/check-in | POST | Protected | Record check-in |
+| | /api/attendance/check-out | POST | Protected | Record check-out |
+| | /api/attendance/:empId/monthly | GET | Protected | Monthly summary (present/absent/late/OT) |
+| **Payroll** | /api/payroll/generate | POST | Admin, HR | Auto-generate payroll for all employees for a month |
+| | /api/payroll/:empId | GET | Protected | Get payroll records for an employee |
+| **Inventory** | /api/inventory | GET | Protected | List items with reorder flag |
+| | /api/inventory/transaction | POST | Admin, Manager | Add or remove stock (triggers email alert on reorder) |
+| **Risk Scoring** | /api/risk/scores | GET | Protected | All risk scores (filter by month/dept/class) |
+| | /api/risk/predict/:empId | GET | Protected | Fresh prediction for one employee (formula + ML) |
+| | /api/risk/retrain | POST | Admin, HR | Trigger Flask model retraining (stage_1 or stage_2) |
+| | /api/risk/ml-status | GET | Protected | Flask model metadata (loaded, stage, accuracy) |
+| **HR Decisions** | /api/decisions | POST | Admin, HR | Submit accept/reject with optional correction |
+| | /api/decisions/:empId | GET | Admin, HR | Get decision history for an employee |
+| **Dashboard** | /api/dashboard/summary | GET | Protected | All KPIs in one request (10 fields) |
+| **Reports** | /api/reports/generate | POST | Admin, HR | Stream PDF report (daily or monthly) |
+
+### Python Flask ML Microservice (3 endpoints — bound to 127.0.0.1:5000)
+
+| Endpoint | Method | Request Body | Response |
 |---|---|---|---|
-| **Auth** | /api/auth/register | POST | Register new user |
-| | /api/auth/login | POST | Login, receive JWT |
-| | /api/auth/verify-otp | POST | Verify email OTP |
-| **Employees** | /api/employees | GET | List all employees |
-| | /api/employees/:id | GET | Get employee by ID |
-| | /api/employees | POST | Create employee |
-| | /api/employees/:id | PUT | Update employee |
-| | /api/employees/:id | DELETE | Delete employee |
-| **Attendance** | /api/attendance/check-in | POST | Record check-in |
-| | /api/attendance/check-out | POST | Record check-out |
-| | /api/attendance/:empId/monthly | GET | Monthly attendance summary |
-| **Payroll** | /api/payroll/generate | POST | Generate monthly payroll |
-| | /api/payroll/:empId | GET | Get payroll records |
-| **Inventory** | /api/inventory | GET | List all stock items |
-| | /api/inventory/transaction | POST | Add/remove stock |
-| **Risk Scoring** | /api/risk/scores | GET | Get all risk scores |
-| | /api/risk/predict/:empId | GET | Get risk prediction for employee |
-| | /api/ml/retrain | POST | Trigger ML model retraining |
-| **HR Decisions** | /api/decisions | POST | Submit accept/reject decision |
-| | /api/decisions/:empId | GET | Get decision history |
-| **Dashboard** | /api/dashboard/summary | GET | KPI summary data |
-
-### Python Flask ML Microservice (3 endpoints)
-
-| Endpoint | Method | Description |
-|---|---|---|
-| /predict | POST | Receive 8-feature vector, return risk class + feature importance |
-| /train | POST | Retrain model with accumulated HR decision ground truth |
-| /health | GET | Health check — model loaded, version, last trained timestamp |
+| GET /health | GET | — | `{ status, model_loaded, model_stage, trained_at, training_samples, accuracy, flask_version }` |
+| POST /predict | POST | `{ employee_id, month, features: {8 keys} }` | `{ risk_class, confidence, shap_base_value, shap_values{8}, employee_id, month }` — 503 if model not loaded |
+| POST /train | POST | `{ stage: "stage_1" \| "stage_2" }` | `{ success, stage, samples_used, classes, smote_applied, accuracy_validation, accuracy_test, trained_at }` |
 
 ---
 
@@ -710,8 +819,164 @@ These weights are configurable and can be recalibrated based on HR feedback and 
 | "Why not use IBM HR dataset?" | "We needed integrated cross-module data (attendance + payroll + social) that doesn't exist in any public dataset. Synthetic generation allows controlled ground truth." |
 | "Why Random Forest?" | "Literature consistently shows RF achieves highest accuracy for employee attrition (92%+ in multiple studies). It handles mixed feature types, provides feature importance, and is robust to overfitting." |
 | "How is this different from existing ERP?" | "Three novel contributions: (1) synthetic social signal with production pathway, (2) ML risk scoring integrated in lightweight ERP, (3) HR feedback loop for model improvement" |
-| "20 employees is too small" | "Sufficient for research prototype and feasibility demonstration. The architecture scales — MongoDB and the ML pipeline impose no employee count limits." |
+| "Dataset is too small" | "100 employees × 6 months produces 600 feature vectors — sufficient for Random Forest training with SMOTE augmentation and temporal train/val/test split. The architecture scales horizontally — MongoDB sharding and Flask behind gunicorn impose no practical employee count limit." |
+
+---
+
+---
+
+## 24. Actual ML Evaluation Results (100-Employee Dataset)
+
+These are the real numbers from `ml-service/evaluate.py` run on 2026-05-28. Use these verbatim in Chapter 5.
+
+### Model Performance Summary
+
+| Metric | Stage 1 (Formula Labels) | Stage 2 (HR-Corrected Labels) | Delta |
+|---|---|---|---|
+| Validation Accuracy | 93.0% | 93.0% | — |
+| **Test Accuracy** | **88.0%** | **83.0%** | −5.0% |
+| **F1 Score (macro)** | **0.592** | **0.836** | **+24.4 pts** |
+
+**Training samples after SMOTE:**
+- Stage 1: 720 samples (augmented from 400 training records)
+- Stage 2: 582 samples (HR-corrected labels — fewer because only corrected + accepted records used)
+
+### Key Analytical Finding for Thesis
+
+The −5% test accuracy drop from Stage 1 → Stage 2 is **not a regression** — it is expected and explainable:
+
+- Stage 1 trains on clean formula-derived labels → artificially aligned features and labels → high accuracy on the same distribution
+- Stage 2 trains on HR-corrected labels where HR intentionally overrode the formula → the model learns to classify *against* the formula in edge cases
+- The **+24.4 pt F1 macro lift** is the correct metric for multi-class imbalanced classification. It shows the model becomes dramatically better at classifying minority classes (High, Critical) after human feedback.
+- This is the central empirical evidence for **Novelty Pillar 3 (Human-in-the-Loop retraining)**.
+
+### Evaluation Artifacts Generated (all in `ml-service/evaluation_output/`)
+
+| File | Content | Use in Thesis |
+|---|---|---|
+| `confusion_matrix_stage1.png` | 4×4 confusion matrix — Stage 1 | Ch.5 — before retraining |
+| `confusion_matrix_stage2.png` | 4×4 confusion matrix — Stage 2 | Ch.5 — after retraining |
+| `feature_importance_stage1.png` | RF feature importances — Stage 1 | Ch.5 — feature analysis |
+| `feature_importance_stage2.png` | RF feature importances — Stage 2 | Ch.5 — post-feedback shift |
+| `shap_summary.png` | Mean |SHAP| per feature — Stage 2 | Ch.5 — explainability section |
+| `shap_drift.png` | Feature importance shift Stage 1 → Stage 2 | Ch.5 — feedback loop effect |
+| `n_estimators_curve.png` | Accuracy vs tree count (50–500 sweep) | Ch.4 — hyperparameter justification |
+| `social_score_histograms.png` | Sub-score frequency distributions | Ch.5 — social score validation |
+| `social_score_correlation.png` | 4×4 sub-score correlation matrix | Ch.5 — social score validation |
+| `social_score_drift.png` | High-risk vs low-risk employee trajectories over 6 months | Ch.5 — temporal drift validation |
+| `feature_correlation.png` | 8-feature correlation matrix | Ch.4 — feature design justification |
+| `evaluation_results.json` | All metrics in machine-readable form | Machine-readable backup |
+
+---
+
+## 25. MongoDB Schema Field Reference
+
+For thesis Chapter 4 (Design & Implementation) — exact field names as implemented.
+
+### Employee
+`name · email · password(hidden) · role · department · position · hourly_rate · allowances · risk_bias(hidden) · hire_date · is_active · createdAt · updatedAt`
+
+Roles: `admin | hr_manager | manager | employee`
+Departments: `Engineering | Marketing | Finance | Operations | HR`
+
+### Attendance
+`employee_id · date · check_in · check_out · late_minutes · status · overtime_hours · createdAt · updatedAt`
+
+Status enum: `present | absent | late`
+Unique index: `(employee_id, date)`
+
+### Payroll
+`employee_id · month · working_hours · overtime_hours · gross_salary · deductions{epf, etf, tax} · late_penalty · net_salary · final_salary · createdAt · updatedAt`
+
+Unique index: `(employee_id, month)` — upserted so generation is idempotent
+
+### SocialScore
+`employee_id · month · job_search · post_drop · network_growth · sentiment · social_score · social_data_source · createdAt · updatedAt`
+
+All sub-scores and composite: `[0.0, 1.0]`
+`social_data_source` default: `'synthetic'` → transitions to `'linkedin_api'` in production
+
+### EmployeeFeature
+`employee_id · month · absence_rate · late_rate · overtime_ratio · productivity_index · payroll_variance · social_score · tenure_months · department_risk · createdAt · updatedAt`
+
+All fields normalised to `[0.0, 1.0]` via min-max scaling
+Unique index: `(employee_id, month)`
+
+### RiskScore
+`employee_id · month · risk_score · risk_class · ml_status · confidence · confidence_label · top_drivers[] · shap_base_value · shap_values{} · createdAt · updatedAt`
+
+`risk_score`: 0–100 (weighted composite)
+`ml_status`: `predicted | formula_only`
+`confidence_label`: `Strong | Moderate | Uncertain`
+`top_drivers`: array of `{feature, impact: high|moderate|low, explanation}`
+
+### HRDecision
+`employee_id · month · original_class · decision · corrected_class · reason · decided_by · decided_at · createdAt · updatedAt`
+
+`decision`: `accept | reject`
+Captures the human feedback that drives Stage 2 retraining
+
+### Inventory
+`name · category · quantity · reorder_level · lead_time · safety_stock · unit_price · description · createdAt · updatedAt`
+
+`category`: `raw_material | finished_good`
+`needs_reorder` computed on read: `quantity <= reorder_level`
+
+---
+
+## 26. Seed Pipeline Reference
+
+For Chapter 3 (Methodology) and Chapter 4 — explains how the synthetic dataset was constructed.
+
+**Runner:** `backend/seeds/runAllSeeds.js`
+**Seed months:** `['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03']`
+**Execution time:** ~3 seconds for all 8 steps
+
+| Step | Script | Records Created | Dependencies |
+|---|---|---|---|
+| 1 | `01_seedEmployees.js` | 100 employees (risk_bias assigned per tier) | None |
+| 2 | `02_seedAttendance.js` | ~13,000 daily records (6 months × working days) | Step 1 |
+| 3 | `03_seedPayroll.js` | 600 payroll records | Steps 1–2 |
+| 4 | `04_seedSocialScores.js` | 600 social score records (VAR model) | Step 1 |
+| 5 | `05_seedFeatureVectors.js` | 600 normalised feature vectors | Steps 1–4 |
+| 6 | `06_seedRiskScores.js` | 600 formula-based risk scores | Step 5 |
+| 7 | `07_seedHRDecisions.js` | 600 HR decisions (74 rejections = 12.3% correction rate) | Steps 1, 6 |
+| 8 | `08_seedInventory.js` | 15 items + 69 transactions | None |
+
+**Why this seeding order matters for thesis:** The pipeline mirrors real-world data generation — attendance precedes payroll which precedes feature construction. This order validates the system's data dependency chain as part of the DSRM demonstration stage.
+
+---
+
+## 27. Reports Feature (Added 2026-06-12)
+
+**Scope:** PDF report generation for HR managers and administrators.
+
+### Endpoint
+`POST /api/reports/generate`
+- Auth: `admin`, `hr_manager` only
+- Body: `{ type: 'daily'|'monthly', date?: 'YYYY-MM-DD', month?: 'YYYY-MM' }`
+- Response: `application/pdf` binary stream (PDFKit, server-rendered)
+- Filename: `NEXUS_Monthly_Report_YYYY-MM.pdf` or `NEXUS_Daily_Report_YYYY-MM-DD.pdf`
+
+### Monthly Report Contents
+1. **Executive Summary** — Total employees, attendance rate, monthly payroll total (LKR), Workforce Risk Level (%)
+2. **Risk Distribution** — Low / Medium / High / Critical counts with colour-coded tiles
+3. **Department Risk Breakdown** — Per-department employee count, average risk score, dominant risk class
+4. **Employee Details Table** — Per-employee: name, dept, present days, absent days, late days, final salary (LKR), risk class, ML/Formula tag
+5. **HR Decisions** — All accept/reject decisions for the month with original class, corrected class, decided by, date
+
+### Daily Report Contents
+1. **Daily Summary** — Present / Late / Absent / Total counts
+2. **Attendance Details Table** — Per-employee: name, dept, status, check-in time, check-out time, late minutes, OT hours
+3. **Inventory Alerts** — Items at or below reorder level (item name, category, current stock, reorder level)
+
+### Implementation Notes
+- Library: `pdfkit` (Node.js, ~1 MB, no external rendering engine)
+- Data aggregation: single MongoDB query pass per report type (no N+1 calls)
+- Frontend: `Reports.jsx` page at `/reports` — type toggle, date/month picker, Generate & Download button
+- Role guard: non-HR roles see an access-restricted message; button is disabled
 
 ---
 
 *This document is the single source of truth for the NEXUS ERP research project. All thesis writing, SLR work, and development should reference this document for consistency.*
+*Last updated: 2026-06-12 — reflects fully implemented, tested, and evaluated system.*

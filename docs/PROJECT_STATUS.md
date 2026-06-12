@@ -1,7 +1,7 @@
 # NEXUS ERP — Project Status & Next Steps
 
-**Last Updated:** 2026-05-28
-**Phase:** Phase I complete — Phase J (delivery) in progress
+**Last Updated:** 2026-06-12
+**Phase:** Phase I complete — Phase J (delivery) in progress + Reports feature added
 **Delivery:** Pending GitHub push + screenshots
 
 ---
@@ -12,9 +12,9 @@
 
 | Component | Status | Files | Notes |
 |---|---|---|---|
-| **Backend (Node.js/Express)** | Complete | 45 | All 21 API endpoints functional |
+| **Backend (Node.js/Express)** | Complete | 47 | 22 API endpoints — added POST /api/reports/generate |
 | **ML Service (Flask)** | Complete | 5 | /predict, /train, /health with SHAP |
-| **Frontend (React/Vite)** | Complete | 19 | 7 pages, dark navy theme |
+| **Frontend (React/Vite)** | Complete | 20 | 8 pages — added Reports page |
 | **Seed Pipeline** | Complete | 10 scripts | 100 employees × 6 months, runs in ~3s |
 | **Evaluation Script** | Complete | 1 | 12 artifacts regenerated for Chapter 5 |
 | **Documentation** | Complete | 5 READMEs | Root + backend + frontend + ml-service + screenshots |
@@ -47,7 +47,7 @@
 - Employee, Attendance, Payroll, Inventory, InventoryTransaction
 - SocialScore, EmployeeFeature, RiskScore, HRDecision
 
-**8 Controller Modules (all fully implemented):**
+**9 Controller Modules (all fully implemented):**
 - Auth (register, login, OTP, getMe)
 - Employee (CRUD with RBAC, soft delete, search/filter/paginate)
 - Attendance (check-in/out, monthly summary with working day calculation)
@@ -56,6 +56,7 @@
 - Risk (get scores, predict with ML pipeline, retrain proxy, ML status)
 - Decision (HR accept/reject with RiskScore update)
 - Dashboard (10 KPIs, attendance trend, payroll trend, dept breakdown, WRL)
+- Report (generate daily/monthly PDF — attendance, payroll, risk, HR decisions)
 
 **5 Utility Modules:**
 - `payrollCalculator.js` — Gross/Net/Final salary formula
@@ -92,7 +93,7 @@
 
 ### Frontend Details
 
-**7 Pages:**
+**8 Pages:**
 - Login — Dark-themed, demo credentials hint
 - Dashboard — 6 KPI cards, attendance area chart, risk donut, payroll bars, top risk employees
 - Employees — Searchable table with department/role filters, avatar initials
@@ -100,6 +101,7 @@
 - Payroll — Monthly table (gross, EPF+ETF, penalty, final salary in LKR)
 - Inventory — Item table with reorder alerts, add transaction modal
 - Risk Scoring — WRL banner, filterable risk table, SHAP detail modal, HR accept/reject, retrain button
+- Reports — Daily/Monthly PDF report generator (admin + hr_manager only); downloads via PDFKit backend stream
 
 ---
 
@@ -128,6 +130,16 @@
 | I5: Screenshot collection | **Pending** | 10 screenshots needed for thesis Chapter 4 — see `docs/screenshots/README.md` |
 | I6: Git repository | Done | `git init` · `.gitignore` · committed 2026-05-28 (105 files, commit 8bb7073) |
 | I7: Dataset scale | Done | Expanded from 20 → 100 employees, all artifacts regenerated |
+
+### Phase K: Reports Feature — COMPLETE (2026-06-12)
+
+| Task | Status | Notes |
+|---|---|---|
+| K1: PDFKit backend endpoint | Done | `POST /api/reports/generate` — protected, admin+hr_manager. Streams PDF binary. |
+| K2: Monthly report | Done | Executive KPIs, risk distribution, dept breakdown, per-employee table, HR decisions |
+| K3: Daily report | Done | Attendance headcount summary, per-employee rows, inventory alerts |
+| K4: Reports page (frontend) | Done | `/reports` — type toggle, date/month picker, Generate & Download button, role guard |
+| K5: Sidebar + routing | Done | "Reports" nav item (FileText icon), `/reports` route in App.jsx, Topbar entry |
 
 ---
 
@@ -189,20 +201,20 @@ npm run dev     # http://localhost:3000
 
 ```
 system/
-├── backend/                    (45 files)
+├── backend/                    (47 files)
 │   ├── config/db.js
 │   ├── middleware/             auth.js, errorHandler.js
 │   ├── models/                 (9 schemas)
-│   ├── controllers/            (8 controllers)
-│   ├── routes/                 (8 route modules)
+│   ├── controllers/            (9 controllers — includes reportController.js)
+│   ├── routes/                 (9 route modules — includes reportRoutes.js)
 │   ├── seeds/                  (8 seed scripts + helpers + runner)
 │   ├── utils/                  (5 utilities)
 │   ├── server.js
 │   └── package.json
-├── frontend/                   (19 source files)
+├── frontend/                   (20 source files)
 │   ├── src/
 │   │   ├── components/         Sidebar, Topbar, Layout, KPICard, RiskBadge, Toast
-│   │   ├── pages/              Login, Dashboard, Employees, Attendance, Payroll, Inventory, RiskScoring
+│   │   ├── pages/              Login, Dashboard, Employees, Attendance, Payroll, Inventory, RiskScoring, Reports
 │   │   ├── context/            AuthContext.jsx
 │   │   ├── services/           api.js
 │   │   ├── hooks/              useFetch.js
