@@ -9,6 +9,7 @@ const PAGES = {
   '/payroll':    { title: 'Payroll',       subtitle: 'Compensation records'        },
   '/inventory':  { title: 'Inventory',     subtitle: 'Stock management'            },
   '/risk':       { title: 'Risk Scoring',  subtitle: 'ML-powered attrition risk'   },
+  '/reports':    { title: 'Reports',       subtitle: 'Download PDF reports'         },
 };
 
 export default function Topbar() {

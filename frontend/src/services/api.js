@@ -73,4 +73,9 @@ export const dashboardService = {
   getSummary: (month) => api.get('/dashboard/summary', { params: { month } }),
 };
 
+export const reportService = {
+  generate: (type, date, month) =>
+    api.post('/reports/generate', { type, date, month }, { responseType: 'blob' }),
+};
+
 export default api;

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, Users, Calendar, CreditCard, Package, Shield, LogOut, Menu, X
+  LayoutDashboard, Users, Calendar, CreditCard, Package, Shield, FileText, LogOut, Menu, X
 } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: '/payroll',    icon: CreditCard,      label: 'Payroll' },
   { to: '/inventory',  icon: Package,         label: 'Inventory' },
   { to: '/risk',       icon: Shield,          label: 'Risk Scoring', badge: 'ML' },
+  { to: '/reports',   icon: FileText,        label: 'Reports' },
 ];
 
 export default function Sidebar() {

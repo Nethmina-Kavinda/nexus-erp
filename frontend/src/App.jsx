@@ -8,6 +8,7 @@ import Attendance from './pages/Attendance';
 import Payroll from './pages/Payroll';
 import Inventory from './pages/Inventory';
 import RiskScoring from './pages/RiskScoring';
+import Reports from './pages/Reports';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/risk" element={<RiskScoring />} />
+        <Route path="/reports" element={<Reports />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
