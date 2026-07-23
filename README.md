@@ -108,6 +108,48 @@ npm run dev                  # → http://localhost:3000
 
 ---
 
+## Running the Application (Day-to-Day)
+
+Once `setup.bat` (or the manual setup) has been run **once**, starting the system for normal use only requires 4 terminals — no reinstall, no re-seed, no retrain.
+
+| # | Terminal | Command | URL |
+|---|---|---|---|
+| 1 | MongoDB | `mongod --dbpath C:\data\db` | `localhost:27017` |
+| 2 | Backend | `cd backend && npm run dev` | http://localhost:5001 |
+| 3 | ML Service | `cd ml-service && venv\Scripts\activate && python app.py` | http://127.0.0.1:5000 |
+| 4 | Frontend | `cd frontend && npm run dev` | http://localhost:3000 |
+
+Start them in this order (each in its own terminal window, left running): **MongoDB → Backend → ML Service → Frontend**. Then open http://localhost:3000 and log in with a demo credential above.
+
+To stop everything, close the four terminal windows (or `Ctrl+C` in each).
+
+> **Only run once, not on every startup:** `npm install` (per folder), `npm run seed` (backend), and the two `/train` calls. Re-run `npm run seed` only if you want to reset the database back to the original synthetic dataset — this will erase any data entered since.
+
+### Production-style run (optional)
+
+For a build instead of the Vite dev server:
+
+```bash
+cd frontend
+npm run build      # outputs static files to frontend/dist
+npm run preview    # serves the production build locally
+```
+
+The backend can run the same way in production via `npm start` (plain `node server.js`, no file-watching) instead of `npm run dev`.
+
+### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Backend fails to start, `MongoNetworkError` | MongoDB isn't running | Start `mongod` first, confirm it's listening on `27017` |
+| Risk scores show `ml_status: 'formula_only'` | Flask ML service is down or not trained | Start `ml-service` (`python app.py`), then re-run the two `/train` calls if this is a fresh database |
+| Login fails for demo users | Database hasn't been seeded | `cd backend && npm run seed` |
+| Frontend loads but API calls fail (network error) | Backend not running, or wrong port | Confirm backend is up at http://localhost:5001 and `frontend/.env` (if present) points to it |
+| `python app.py` errors with missing module | Virtual environment not activated | `cd ml-service && venv\Scripts\activate` before running |
+| Port already in use (`EADDRINUSE`) | A previous instance is still running | Close the old terminal, or find and kill the process on that port |
+
+---
+
 ## API
 
 Full endpoint reference is in [`backend/README.md`](backend/README.md).
