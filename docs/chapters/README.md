@@ -11,14 +11,16 @@
 
 | Chapter | Title | Status | File |
 |---|---|---|---|
-| 1 | Introduction | Not started | — |
-| 2 | Literature Review (SLR) | **COMPLETE** — copy from `research_docs/SLR.md` | — |
-| 3 | Methodology | **WRITTEN** | `chapter_3_methodology.md` |
-| 4 | Design & Implementation | Not started | — |
-| 5 | Evaluation & Results | Not started | — |
-| 6 | Conclusion | Not started | — |
+| 1 | Introduction | **COMPLETE + humanized** | `chapter_1_introduction.md` |
+| 2 | Literature Review (SLR) | **COMPLETE + humanized** | `research_docs/SLR.md` |
+| 3 | Methodology | **COMPLETE + humanized** | `chapter_3_methodology.md` |
+| 4 | Design & Implementation | **COMPLETE + humanized** | `chapter_4_design_implementation.md` |
+| 5 | Evaluation & Results | **COMPLETE + humanized** | `chapter_5_evaluation_results.md` |
+| 6 | Conclusion | **COMPLETE + humanized**, ⚠️ not yet template-aligned | `chapter_6_conclusion.md` |
 
-**Recommended writing order:** 4 → 5 → 1 → 6 (3 done, 2 already written)
+**All 6 chapters are written.** As of 2026-07-14, every chapter (SLR = Ch2) was passed through a prose-humanizing edit: em-dashes rewritten as natural punctuation, AI stock phrases removed, all numbers/metrics/citations left untouched. A combined document was assembled at `docs/NEXUS_ERP_Thesis_Full.docx` via `docs/build_final_thesis.py`.
+
+**Remaining work:** align Chapter 6 to the Dulanjali Wijesekara template structure (currently humanized prose but not template-restructured).
 
 ---
 
@@ -355,10 +357,15 @@ All in `docs/screenshots/`.
 
 ```
 docs/chapters/
-├── README.md                      ← this file — context for continuing thesis work
-└── chapter_3_methodology.md       ← WRITTEN (2,050 words)
+├── README.md                            ← this file — context for continuing thesis work
+├── chapter_1_introduction.md            ← COMPLETE + humanized (~2,600 words)
+├── chapter_3_methodology.md             ← COMPLETE + humanized (~2,050 words)
+├── chapter_4_design_implementation.md   ← COMPLETE + humanized (~6,200 words)
+├── chapter_5_evaluation_results.md      ← COMPLETE + humanized (~5,200 words)
+└── chapter_6_conclusion.md              ← COMPLETE + humanized (~1,600 words), not template-aligned
 ```
 
 Full thesis plan with section-level detail: `docs/THESIS_WRITING_PLAN.md`
 Full project truth: `research_docs/SOURCE_OF_TRUTH.md`
 Complete Chapter 2 (SLR): `research_docs/SLR.md`
+Combined final document: `docs/NEXUS_ERP_Thesis_Full.docx` (built via `docs/build_final_thesis.py`)

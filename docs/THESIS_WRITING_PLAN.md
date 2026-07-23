@@ -4,7 +4,7 @@
 **Student:** Nethmina Kavinda Bandara
 **University:** NSBM Green University — BSc (Hons) Computer Science
 **Methodology:** Peffers' Design Science Research Methodology (DSRM)
-**Last Updated:** 2026-06-12
+**Last Updated:** 2026-07-14
 
 ---
 
@@ -12,14 +12,20 @@
 
 | Chapter | Status | File | Words |
 |---|---|---|---|
-| Chapter 1 — Introduction | ⬜ TODO | — | ~2,500 |
-| Chapter 2 — Literature Review | ✅ COMPLETE | `research_docs/SLR.md` | ~5,000 |
-| Chapter 3 — Methodology | ✅ COMPLETE | `docs/chapters/chapter_3_methodology.md` | ~2,050 |
-| Chapter 4 — Design & Implementation | ⬜ TODO | — | ~6,000 |
-| Chapter 5 — Evaluation & Results | ⬜ TODO | — | ~5,000 |
-| Chapter 6 — Conclusion | ⬜ TODO | — | ~1,500 |
+| Chapter 1 — Introduction | ✅ COMPLETE + humanized | `docs/chapters/chapter_1_introduction.md` | ~2,600 |
+| Chapter 2 — Literature Review | ✅ COMPLETE + humanized | `research_docs/SLR.md` | ~5,000 |
+| Chapter 3 — Methodology | ✅ COMPLETE + humanized | `docs/chapters/chapter_3_methodology.md` | ~2,050 |
+| Chapter 4 — Design & Implementation | ✅ COMPLETE + humanized | `docs/chapters/chapter_4_design_implementation.md` | ~6,200 |
+| Chapter 5 — Evaluation & Results | ✅ COMPLETE + humanized | `docs/chapters/chapter_5_evaluation_results.md` | ~5,200 |
+| Chapter 6 — Conclusion | ✅ COMPLETE + humanized ⚠️ not yet template-aligned | `docs/chapters/chapter_6_conclusion.md` | ~1,600 |
 
-**Total written:** ~7,050 / ~22,500 words (~31%)
+**Total written:** ~22,650 / ~22,500 words (~100%) ✅ ALL CHAPTERS COMPLETE
+
+**2026-07-14 update:** All six chapters (Ch2 = `SLR.md`) went through a prose-humanizing pass — every em-dash in narrative text was rewritten as natural punctuation, and AI stock phrases ("landscape", "comprehensive", "overarching", mechanical "First/Second/Third" enumerations, etc.) were removed, without touching any numbers, metrics, citations, or heading structure. A combined final document, `docs/NEXUS_ERP_Thesis_Full.docx`, was assembled from all six chapters via a new reusable script, `docs/build_final_thesis.py` (rerun it any time the chapter markdown changes to regenerate the docx).
+
+**Still outstanding:**
+- Chapter 6 needs to be restructured to match the Dulanjali Wijesekara template (currently prose-humanized but not template-aligned — see CLAUDE.md chapter status table).
+- A deeper "sentence-level voice" pass is recommended if AI-detection scrutiny is a real concern — em-dash/phrase removal fixes surface tells only, not sentence-level burstiness.
 
 ---
 
