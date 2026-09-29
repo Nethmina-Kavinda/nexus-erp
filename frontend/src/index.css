@@ -1,90 +1,262 @@
 @import "tailwindcss";
 
-@theme {
-  /* Surface */
-  --color-bg: #0A0E1A;
-  --color-surface-1: #111827;
-  --color-surface-2: #1A2236;
-  --color-surface-3: #1E2D45;
+@custom-variant dark (&:where(.dark, .dark *));
 
-  /* Brand + accent */
-  --color-accent-blue: #3B82F6;
-  --color-accent-purple: #8B5CF6;
-  --color-accent-teal: #14B8A6;
-  --color-accent-amber: #F59E0B;
-  --color-accent-red: #EF4444;
+/* ───────────────────────── Design tokens ─────────────────────────
+   One primary hue (indigo). Status colours are reserved for state
+   (risk tiers, attendance status) and never used as decoration.   */
 
-  /* Text */
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
-  --color-text-faint: #475569;
+:root {
+  color-scheme: light;
 
-  /* Borders */
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.16);
+  --bg:           #F4F5F9;
+  --surface:      #FFFFFF;
+  --surface-2:    #F4F5F9;
+  --surface-3:    #EAECF2;
 
-  /* Fonts */
-  --font-heading: 'Plus Jakarta Sans', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --fg:           #161A2E;
+  --fg-2:         #434960;
+  --fg-3:         #676C84;
+
+  --line:         #E7E9F0;
+  --line-strong:  #D6D9E3;
+
+  --primary:        #5B4FE9;
+  --primary-hover:  #4B3FD8;
+  --primary-soft:   #EEEDFD;
+  --primary-fg:     #4A3ECF;
+  --on-primary:     #FFFFFF;
+
+  /* status marks — teal / gold / burnt orange / berry. Chosen to sit with
+     the indigo and validated for colour-blind + normal-vision separation
+     (every adjacent tier pair ΔE ≥ 15). Always shown with a text label. */
+  --good:     #1AA68E;
+  --warn:     #EDBE3A;
+  --serious:  #E5632F;
+  --danger:   #AE2A55;
+
+  /* status text + soft fills */
+  --good-fg:     #0B7564;
+  --warn-fg:     #855800;
+  --serious-fg:  #A9431A;
+  --danger-fg:   #A0244D;
+  --good-soft:     #E2F4F0;
+  --warn-soft:     #FCF4DC;
+  --serious-soft:  #FDECE4;
+  --danger-soft:   #FAE9EF;
+
+  /* chart-only: attendance "present" bulk uses a calm tint of the primary */
+  --chart-base:    #7A70EE;
+
+  /* sidebar — deep indigo in both modes */
+  --side-bg:        #1C1A3D;
+  --side-fg:        #D2D0EC;
+  --side-fg-muted:  #9D9AC6;
+  --side-hover:     rgba(255, 255, 255, 0.06);
+  --side-active:    rgba(255, 255, 255, 0.11);
+  --side-line:      rgba(255, 255, 255, 0.08);
+
+  --shadow-card: 0 1px 2px rgba(22, 26, 46, 0.04), 0 1px 3px rgba(22, 26, 46, 0.03);
+  --shadow-pop:  0 12px 32px -8px rgba(22, 26, 46, 0.18), 0 2px 6px rgba(22, 26, 46, 0.06);
+  --overlay:     rgba(15, 17, 32, 0.62);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --bg:           #0E0F16;
+  --surface:      #161822;
+  --surface-2:    #1D2030;
+  --surface-3:    #272A3C;
+
+  --fg:           #ECEDF4;
+  --fg-2:         #B4B8CB;
+  --fg-3:         #8C91A7;
+
+  --line:         #242738;
+  --line-strong:  #33374C;
+
+  --primary:        #7C72F4;
+  --primary-hover:  #8E85F7;
+  --primary-soft:   rgba(124, 114, 244, 0.15);
+  --primary-fg:     #ADA7FB;
+  --on-primary:     #FFFFFF;
+
+  --good:     #22A68C;
+  --warn:     #E6B940;
+  --serious:  #E8652F;
+  --danger:   #C22F72;
+
+  --good-fg:     #4FD0B4;
+  --warn-fg:     #F2CD62;
+  --serious-fg:  #F4936B;
+  --danger-fg:   #F07EAA;
+  --good-soft:     rgba(34, 166, 140, 0.15);
+  --warn-soft:     rgba(230, 185, 64, 0.13);
+  --serious-soft:  rgba(232, 101, 47, 0.15);
+  --danger-soft:   rgba(194, 47, 114, 0.17);
+
+  --chart-base:    #6D63E6;
+
+  --side-bg:        #12131C;
+  --side-fg:        #C3C6D8;
+  --side-fg-muted:  #8C91A7;
+  --side-hover:     rgba(255, 255, 255, 0.04);
+  --side-active:    rgba(124, 114, 244, 0.16);
+  --side-line:      rgba(255, 255, 255, 0.06);
+
+  --shadow-card: none;
+  --shadow-pop:  0 16px 40px -8px rgba(0, 0, 0, 0.6);
+  --overlay:     rgba(3, 4, 10, 0.8);
+}
+
+@theme inline {
+  --color-bg:          var(--bg);
+  --color-surface:     var(--surface);
+  --color-surface-2:   var(--surface-2);
+  --color-surface-3:   var(--surface-3);
+  --color-fg:          var(--fg);
+  --color-fg-2:        var(--fg-2);
+  --color-fg-3:        var(--fg-3);
+  --color-line:        var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-primary:       var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft:  var(--primary-soft);
+  --color-primary-fg:    var(--primary-fg);
+  --color-on-primary:    var(--on-primary);
+
+  --color-good:     var(--good);
+  --color-warn:     var(--warn);
+  --color-serious:  var(--serious);
+  --color-danger:   var(--danger);
+  --color-good-fg:     var(--good-fg);
+  --color-warn-fg:     var(--warn-fg);
+  --color-serious-fg:  var(--serious-fg);
+  --color-danger-fg:   var(--danger-fg);
+  --color-good-soft:     var(--good-soft);
+  --color-warn-soft:     var(--warn-soft);
+  --color-serious-soft:  var(--serious-soft);
+  --color-danger-soft:   var(--danger-soft);
+
+  --color-side-bg:        var(--side-bg);
+  --color-side-fg:        var(--side-fg);
+  --color-side-fg-muted:  var(--side-fg-muted);
+  --color-side-hover:     var(--side-hover);
+  --color-side-active:    var(--side-active);
+  --color-side-line:      var(--side-line);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop:  var(--shadow-pop);
+
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 @layer base {
   html, body {
-    font-family: var(--font-body);
-    background: var(--color-bg);
-    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 15.5px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  body {
-    min-height: 100vh;
+  body { min-height: 100vh; }
+
+  /* smooth theme switch without animating every hover */
+  html.theme-transition,
+  html.theme-transition * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
   }
+
+  input, select, textarea, button { font-family: inherit; }
+  input:focus, select:focus, textarea:focus { outline: none; }
+  button { cursor: pointer; }
+  button:disabled { cursor: not-allowed; }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection { background: color-mix(in oklab, var(--primary) 25%, transparent); }
+
+  /* native date/month picker icon follows the theme */
+  .dark input[type="month"]::-webkit-calendar-picker-indicator,
+  .dark input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.4); }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg-3); background-clip: content-box; }
 
-::selection {
-  background: rgba(59, 130, 246, 0.3);
-}
-
-/* Skeleton shimmer */
+/* Skeleton */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
+  0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-
 .skeleton {
-  background: linear-gradient(90deg,
-    rgba(255,255,255,0.05) 25%,
-    rgba(255,255,255,0.10) 50%,
-    rgba(255,255,255,0.05) 75%
-  );
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.4s infinite;
   border-radius: 6px;
 }
 
-@keyframes pulse-critical {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.pulse-critical { animation: pulse-critical 2s ease-in-out infinite; }
-
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.25s ease-out; }
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.pop-in { animation: pop-in 0.2s ease-out; }
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ── Login: soft glow that follows the pointer ──
+   A faint static wash is always there; the spotlight fades in on hover. */
+.login-spotlight {
+  --mx: 50%;
+  --my: 40%;
+  --spot-a: color-mix(in oklab, var(--primary) 20%, transparent);
+  --spot-b: color-mix(in oklab, #22A68C 8%, transparent);
+  --wash:   color-mix(in oklab, var(--primary) 5%, transparent);
+  background:
+    radial-gradient(900px circle at 100% 0%, var(--wash), transparent 60%),
+    var(--bg);
+}
+.dark .login-spotlight {
+  --spot-a: color-mix(in oklab, var(--primary) 34%, transparent);
+  --spot-b: color-mix(in oklab, #22A68C 13%, transparent);
+  --wash:   color-mix(in oklab, var(--primary) 8%, transparent);
+}
+.login-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(520px circle at var(--mx) var(--my), var(--spot-a), transparent 65%),
+    radial-gradient(900px circle at calc(var(--mx) + 160px) calc(var(--my) + 120px), var(--spot-b), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.login-spotlight[data-spot="on"]::before { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* keep a still, centred glow instead of one that tracks the pointer */
+  .login-spotlight::before { opacity: 0.6; --mx: 50%; --my: 45%; }
 }
 
-.fade-in { animation: fade-in 0.3s ease-out; }
-
-/* Form resets */
-input, select, textarea, button { font-family: inherit; }
-input:focus, select:focus, textarea:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

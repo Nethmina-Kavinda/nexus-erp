@@ -9,6 +9,7 @@ import Payroll from './pages/Payroll';
 import Inventory from './pages/Inventory';
 import RiskScoring from './pages/RiskScoring';
 import Reports from './pages/Reports';
+import Profile from './pages/Profile';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/risk" element={<RiskScoring />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

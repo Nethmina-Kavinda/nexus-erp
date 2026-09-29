@@ -18,6 +18,10 @@ const protect = async (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ success: false, error: 'User no longer exists' });
     }
+    // Deactivation takes effect immediately, even for already-issued tokens.
+    if (!req.user.is_active) {
+      return res.status(401).json({ success: false, error: 'Account deactivated' });
+    }
     next();
   } catch (error) {
     return res.status(401).json({ success: false, error: 'Not authorized — invalid token' });

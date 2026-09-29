@@ -25,11 +25,17 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  /** Replace the stored session user after a profile edit (token is unchanged). */
+  const updateUser = (userData) => {
+    localStorage.setItem('nexus_user', JSON.stringify(userData));
+    setUser(userData);
+  };
+
   const isAuthenticated = !!user;
   const hasRole = (...roles) => user && roles.includes(user.role);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated, hasRole }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, loading, isAuthenticated, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

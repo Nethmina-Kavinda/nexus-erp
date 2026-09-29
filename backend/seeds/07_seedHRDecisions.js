@@ -84,6 +84,7 @@ async function seedHRDecisions() {
       reason,
       decided_by: hrManager ? hrManager._id : null,
       decided_at: new Date(),
+      source: 'seed',
     });
   }
 

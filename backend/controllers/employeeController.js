@@ -98,18 +98,35 @@ const createEmployee = async (req, res, next) => {
 };
 
 /**
- * Update an employee record. Two security guards: (1) only admins may set
- * the `admin` role to prevent privilege escalation, and (2) `password` and
- * `risk_bias` are stripped from the body — passwords have a dedicated path
- * and `risk_bias` is internal-only research metadata.
+ * Update an employee record. Security guards: (1) only admins may change a
+ * role at all, preventing privilege escalation; (2) admins cannot change
+ * their own role or deactivate themselves, so the system can never be left
+ * without a working admin; (3) `password` and `risk_bias` are stripped from
+ * the body — passwords have a dedicated path and `risk_bias` is internal-only
+ * research metadata.
  * @route   PUT /api/employees/:id
  * @access  Protected (admin, hr_manager)
  */
 const updateEmployee = async (req, res, next) => {
   try {
-    // Prevent role escalation — only admin can set admin role
-    if (req.body.role === 'admin' && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, error: 'Only admins can assign admin role' });
+    const target = await Employee.findById(req.params.id);
+    if (!target) {
+      return res.status(404).json({ success: false, error: 'Employee not found' });
+    }
+
+    // Prevent role escalation — only admins can change roles
+    if (req.body.role !== undefined && req.body.role !== target.role && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, error: 'Only admins can change roles' });
+    }
+
+    // Prevent self lock-out
+    if (String(target._id) === String(req.user._id)) {
+      if (req.body.role !== undefined && req.body.role !== target.role) {
+        return res.status(400).json({ success: false, error: 'You cannot change your own role' });
+      }
+      if (req.body.is_active === false) {
+        return res.status(400).json({ success: false, error: 'You cannot deactivate your own account' });
+      }
     }
 
     // Don't allow password update through this route
@@ -139,6 +156,10 @@ const updateEmployee = async (req, res, next) => {
  */
 const deleteEmployee = async (req, res, next) => {
   try {
+    if (String(req.params.id) === String(req.user._id)) {
+      return res.status(400).json({ success: false, error: 'You cannot deactivate your own account' });
+    }
+
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
       { is_active: false },
@@ -155,4 +176,34 @@ const deleteEmployee = async (req, res, next) => {
   }
 };
 
-module.exports = { getEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee };
+/**
+ * Admin password reset for another user (e.g. a forgotten password).
+ * Users change their own password via PUT /api/auth/password instead.
+ * @route   PUT /api/employees/:id/password
+ * @access  Protected (admin only)
+ * @body    password (min 6 chars)
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+    }
+
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { password: await bcrypt.hash(password, 12) },
+      { new: true }
+    ).select('name email');
+
+    if (!employee) {
+      return res.status(404).json({ success: false, error: 'Employee not found' });
+    }
+
+    res.json({ success: true, message: `Password reset for ${employee.name}` });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getEmployees, getEmployee, createEmployee, updateEmployee, deleteEmployee, resetPassword };

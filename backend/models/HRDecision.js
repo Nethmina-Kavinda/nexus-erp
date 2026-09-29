@@ -37,6 +37,13 @@ const hrDecisionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Provenance: 'seed' = synthetic historical label from seed step 7,
+    // 'hr_review' = recorded by an HR user in the app. Only 'hr_review'
+    // decisions lock a prediction against further accept/reject.
+    source: {
+      type: String,
+      enum: ['seed', 'hr_review'],
+    },
   },
   { timestamps: true }
 );

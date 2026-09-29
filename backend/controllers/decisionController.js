@@ -6,6 +6,7 @@ const RiskScore = require('../models/RiskScore');
  * ground truth that powers stage_2 retraining (the human-in-the-loop core
  * of the research). On reject, the corrected class is written back to the
  * RiskScore so the UI immediately reflects the override.
+ * Each employee-month can be reviewed once; a repeat returns 409.
  * @route   POST /api/decisions
  * @access  Protected (admin, hr_manager)
  * @body    { employee_id, month, original_class, decision: "accept"|"reject",
@@ -23,6 +24,12 @@ const submitDecision = async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'corrected_class required when rejecting' });
     }
 
+    // A prediction is reviewed once; the first HR decision is final.
+    const existing = await HRDecision.findOne({ employee_id, month, source: 'hr_review' });
+    if (existing) {
+      return res.status(409).json({ success: false, error: 'This prediction has already been reviewed' });
+    }
+
     const hrDecision = await HRDecision.create({
       employee_id,
       month,
@@ -31,6 +38,7 @@ const submitDecision = async (req, res, next) => {
       corrected_class: decision === 'reject' ? corrected_class : original_class,
       reason,
       decided_by: req.user._id,
+      source: 'hr_review',
     });
 
     // If rejected, update the RiskScore

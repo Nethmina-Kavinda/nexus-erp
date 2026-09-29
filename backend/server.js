@@ -26,6 +26,7 @@ app.use('/api/risk', require('./routes/riskRoutes'));
 app.use('/api/decisions', require('./routes/decisionRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/reports',   require('./routes/reportRoutes'));
+app.use('/api/departments', require('./routes/departmentRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -25,10 +25,15 @@ const employeeSchema = new mongoose.Schema(
       enum: ['admin', 'hr_manager', 'manager', 'employee'],
       default: 'employee',
     },
+    // Must name an existing Department; admins manage the list.
     department: {
       type: String,
-      enum: ['Engineering', 'Marketing', 'Finance', 'Operations', 'HR'],
       required: [true, 'Department is required'],
+      trim: true,
+      validate: {
+        validator: async (name) => !!(await mongoose.model('Department').exists({ name })),
+        message: (props) => `Department "${props.value}" does not exist`,
+      },
     },
     position: {
       type: String,

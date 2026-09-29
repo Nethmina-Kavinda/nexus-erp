@@ -1,6 +1,7 @@
 const RiskScore = require('../models/RiskScore');
 const EmployeeFeature = require('../models/EmployeeFeature');
 const Employee = require('../models/Employee');
+const HRDecision = require('../models/HRDecision');
 const { computeRiskScore, classifyRisk, getConfidenceLabel } = require('../utils/riskScoring');
 const { generateTopDrivers } = require('../utils/topDrivers');
 const mlClient = require('../utils/mlClient');
@@ -30,7 +31,28 @@ const getScores = async (req, res, next) => {
       scores = scores.filter((s) => s.employee_id && s.employee_id.department === department);
     }
 
-    res.json({ success: true, count: scores.length, data: scores });
+    // Attach the in-app HR review (if any) so the UI can lock reviewed rows.
+    const reviews = await HRDecision.find({
+      source: 'hr_review',
+      month: { $in: [...new Set(scores.map((s) => s.month))] },
+    }).populate('decided_by', 'name');
+    const reviewMap = new Map(reviews.map((r) => [`${r.employee_id}_${r.month}`, r]));
+
+    const data = scores.map((s) => {
+      const r = s.employee_id && reviewMap.get(`${s.employee_id._id}_${s.month}`);
+      return {
+        ...s.toObject(),
+        review: r ? {
+          decision: r.decision,
+          original_class: r.original_class,
+          corrected_class: r.corrected_class,
+          decided_by: r.decided_by?.name || null,
+          decided_at: r.decided_at,
+        } : null,
+      };
+    });
+
+    res.json({ success: true, count: data.length, data });
   } catch (error) {
     next(error);
   }

@@ -1,15 +1,27 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AlertCircle, Eye, EyeOff, Moon, Sun, ShieldCheck, Users, Wallet } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { AlertCircle } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import Logo from '../components/Logo';
+import { Button, Field, IconButton, inputClass } from '../components/ui';
+
+const DEMO = [
+  { role: 'admin', label: 'Admin',      email: 'kavinda@nexus.lk' },
+  { role: 'hr',    label: 'HR Manager', email: 'malini@nexus.lk'  },
+];
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const spotRef = useRef(null);
+  const spot = useSpotlight(spotRef);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,90 +43,161 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-xl bg-accent-blue flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(59,130,246,0.4)]">
-            <span className="text-white font-heading font-bold text-2xl">N</span>
-          </div>
-          <h1 className="text-2xl font-heading font-bold text-white">NEXUS ERP</h1>
-          <p className="text-text-muted text-[11px] font-mono uppercase tracking-[0.2em] mt-1.5">Enterprise Portal</p>
+    <div className="min-h-screen bg-bg flex">
+      {/* Brand panel */}
+      <aside className="hidden lg:flex w-[46%] max-w-[640px] bg-side-bg relative overflow-hidden flex-col justify-between p-12">
+        <div
+          className="absolute -right-32 -top-32 w-[520px] h-[520px] rounded-full opacity-40"
+          style={{ background: 'radial-gradient(closest-side, var(--primary), transparent)' }}
+          aria-hidden
+        />
+        <div className="relative"><Logo /></div>
+
+        <div className="relative">
+          <h2 className="text-[36px] leading-[1.15] font-extrabold text-white tracking-tight max-w-md">
+            Run your people and operations from one place.
+          </h2>
+          <p className="text-side-fg text-[16.5px] mt-4 max-w-md leading-relaxed">
+            Attendance, payroll and inventory, with attrition risk you can explain to your team.
+          </p>
+
+          <ul className="mt-10 space-y-4">
+            {[
+              { icon: Users,       text: 'Employee records and monthly attendance' },
+              { icon: Wallet,      text: 'Payroll with EPF and ETF worked out for you' },
+              { icon: ShieldCheck, text: 'Risk scores that show the reasons behind them' },
+            ].map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3 text-[15.5px] text-side-fg">
+                <span className="w-8 h-8 rounded-lg bg-side-active flex items-center justify-center text-white shrink-0">
+                  <Icon size={16} strokeWidth={2} />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Card */}
-        <div className="bg-surface-1 border border-border rounded-xl p-7">
-          <h2 className="text-lg font-heading font-semibold text-white">Sign in</h2>
-          <p className="text-[13px] text-text-secondary mt-1">Access your workspace</p>
+        <div className="relative text-[14px] text-side-fg-muted">NSBM Green University · Research prototype</div>
+      </aside>
 
-          {error && (
-            <div className="mt-5 flex items-start gap-2.5 bg-accent-red/10 border border-accent-red/30 rounded-lg px-3.5 py-2.5 fade-in">
-              <AlertCircle size={15} className="text-accent-red shrink-0 mt-0.5" strokeWidth={2} />
-              <div className="text-[13px] text-accent-red">{error}</div>
-            </div>
-          )}
+      {/* Form */}
+      <main
+        ref={spotRef}
+        onPointerMove={spot.onMove}
+        onPointerLeave={spot.onLeave}
+        className="login-spotlight relative isolate flex-1 flex flex-col overflow-hidden"
+      >
+        <div className="flex items-center justify-between p-5 sm:p-6">
+          <div className="lg:hidden"><Logo light={false} /></div>
+          <IconButton
+            label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={toggleTheme}
+            className="ml-auto w-10 h-10 bg-surface border border-line text-fg-2"
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </IconButton>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-            <div>
-              <label className="block text-[12px] font-medium text-text-secondary mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@nexus.lk"
-                required
-                autoComplete="email"
-                className="w-full bg-surface-2 border border-border rounded-lg px-3.5 py-2.5 text-white text-sm placeholder-text-muted focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[12px] font-medium text-text-secondary mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                autoComplete="current-password"
-                className="w-full bg-surface-2 border border-border rounded-lg px-3.5 py-2.5 text-white text-sm placeholder-text-muted focus:border-accent-blue focus:ring-2 focus:ring-accent-blue/20 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-accent-blue hover:bg-accent-blue/90 text-white font-heading font-semibold text-sm py-2.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_16px_rgba(59,130,246,0.3)] hover:shadow-[0_0_24px_rgba(59,130,246,0.4)]"
-            >
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
+        <div className="flex-1 flex items-center justify-center px-5 pb-16">
+          <div className="w-full max-w-[400px]">
+            <h1 className="text-[30px] font-extrabold text-fg tracking-tight">Welcome back</h1>
+            <p className="text-[15.5px] text-fg-3 mt-1.5">Sign in to your workspace to continue.</p>
 
-          {/* Demo quick-fill */}
-          <div className="mt-6 pt-5 border-t border-border">
-            <div className="text-[11px] uppercase tracking-wider text-text-muted font-semibold mb-3">Demo accounts</div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => fillDemo('admin')}
-                className="group text-left p-3 rounded-lg bg-surface-2 border border-border hover:border-accent-blue/50 hover:bg-surface-3 transition-all"
-              >
-                <div className="text-[11px] font-heading font-semibold text-accent-blue">Admin</div>
-                <div className="text-[11px] font-mono text-text-secondary mt-1 truncate">kavinda@nexus.lk</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemo('hr')}
-                className="group text-left p-3 rounded-lg bg-surface-2 border border-border hover:border-accent-purple/50 hover:bg-surface-3 transition-all"
-              >
-                <div className="text-[11px] font-heading font-semibold text-accent-purple">HR Manager</div>
-                <div className="text-[11px] font-mono text-text-secondary mt-1 truncate">malini@nexus.lk</div>
-              </button>
-            </div>
-            <div className="text-[11px] text-text-muted text-center mt-3">
-              Password: <span className="font-mono text-text-secondary">nexus123</span>
+            {error && (
+              <div className="mt-6 flex items-start gap-2.5 bg-danger-soft rounded-xl px-4 py-3 fade-in" role="alert">
+                <AlertCircle size={16} className="text-danger-fg shrink-0 mt-0.5" strokeWidth={2} />
+                <div className="text-[15px] text-danger-fg font-medium">{error}</div>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4 mt-7">
+              <Field label="Email">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@nexus.lk"
+                  required
+                  autoComplete="email"
+                  className={`${inputClass} h-11`}
+                />
+              </Field>
+              <Field label="Password">
+                <div className="relative">
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    autoComplete="current-password"
+                    className={`${inputClass} h-11 pr-11`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((s) => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-fg-3 hover:text-fg rounded-md"
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
+                  >
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </Field>
+              <Button type="submit" disabled={loading} className="w-full h-11 mt-2">
+                {loading ? 'Signing in…' : 'Sign in'}
+              </Button>
+            </form>
+
+            <div className="mt-8">
+              <div className="flex items-center gap-3 text-[14px] text-fg-3 mb-3">
+                <span className="h-px flex-1 bg-line" /> Demo accounts <span className="h-px flex-1 bg-line" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {DEMO.map((d) => (
+                  <button
+                    key={d.role}
+                    type="button"
+                    onClick={() => fillDemo(d.role)}
+                    className="text-left px-4 py-3 rounded-xl bg-surface border border-line hover:border-primary hover:bg-primary-soft/40 transition-colors"
+                  >
+                    <div className="text-[15px] font-bold text-fg">{d.label}</div>
+                    <div className="text-[14px] text-fg-3 mt-0.5 truncate">{d.email}</div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
+}
+
+/**
+ * Cursor-following glow for the form side. Writes the pointer position to
+ * CSS variables (once per frame) and toggles visibility; the gradient itself
+ * lives in index.css under .login-spotlight so light/dark can differ.
+ */
+function useSpotlight(ref) {
+  const frame = useRef(0);
+
+  const onMove = (e) => {
+    const el = ref.current;
+    if (!el || e.pointerType === 'touch') return;
+    const { clientX, clientY } = e;
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${clientX - r.left}px`);
+      el.style.setProperty('--my', `${clientY - r.top}px`);
+      el.dataset.spot = 'on';
+    });
+  };
+
+  const onLeave = () => {
+    cancelAnimationFrame(frame.current);
+    if (ref.current) ref.current.dataset.spot = 'off';
+  };
+
+  return { onMove, onLeave };
 }

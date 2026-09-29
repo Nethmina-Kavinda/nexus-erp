@@ -1,71 +1,81 @@
 import { useState } from 'react';
-import { Calendar, ChevronDown, ChevronRight, Clock, UserCheck, UserX, AlertCircle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { AlertTriangle, SearchX, ChevronDown, ChevronRight, Clock, UserCheck, UserX, AlarmClock, Timer, CalendarDays } from 'lucide-react';
+import clsx from 'clsx';
 import { attendanceService, employeeService } from '../services/api';
 import { useFetch } from '../hooks/useFetch';
 import ErrorBanner from '../components/ErrorBanner';
 import Panel from '../components/Panel';
-import clsx from 'clsx';
+import { Avatar, EmptyState, MonthPicker, Pill, SkeletonRows, Th } from '../components/ui';
+import { DATA_MONTHS, LATEST_MONTH, countLabel, formatMonth, matchesQuery } from '../lib/format';
 
 export default function Attendance() {
-  const [month] = useState('2026-03');
+  const [params, setParams] = useSearchParams();
+  // ?month=YYYY-MM, defaulting to the latest month with data
+  const month = DATA_MONTHS.includes(params.get('month')) ? params.get('month') : LATEST_MONTH;
   const [expandedId, setExpandedId] = useState(null);
   const { data: employees, loading, error, refetch } = useFetch(() => employeeService.getAll({ limit: 100 }), []);
 
-  const empList = employees || [];
+  const setMonth = (m) => {
+    setExpandedId(null);
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (m === LATEST_MONTH) next.delete('month'); else next.set('month', m);
+      return next;
+    }, { replace: true });
+  };
 
+  const empList = employees || [];
+  const q = params.get('q') || '';  // from the top-bar search
+  const isMatch = (emp) => matchesQuery(q, emp.name, emp.department);
+  const shown = empList.filter(isMatch).length;
   const toggle = (id) => setExpandedId((prev) => (prev === id ? null : id));
 
   return (
-    <div className="space-y-7 max-w-[1600px] mx-auto">
+    <div className="space-y-6">
       <ErrorBanner error={error} onRetry={refetch} />
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 bg-surface-1 border border-border rounded-lg px-3 py-2">
-          <Calendar size={13} className="text-text-secondary" strokeWidth={2} />
-          <span className="text-[12px] text-text-muted font-medium">Month:</span>
-          <span className="text-[13px] text-white font-mono tabular-nums font-semibold">{month}</span>
-        </div>
-        <div className="flex-1" />
-        <span className="text-[12px] text-text-muted font-mono">
-          {loading ? 'Loading…' : `${empList.length} employees — click a row to expand`}
-        </span>
-      </div>
-
-      {/* Table */}
-      <Panel noPadding>
+      <Panel
+        noPadding
+        title={`Attendance for ${formatMonth(month, 'long')}`}
+        subtitle={loading ? 'Loading…' : `${countLabel(shown, empList.length, 'employees', q)} · ⚠ marks ${FLAG_AT} or more days · select a row for daily records`}
+        action={
+          <MonthPicker
+            value={month}
+            months={DATA_MONTHS}
+            onChange={setMonth}
+            format={(m) => formatMonth(m, 'long')}
+          />
+        }
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border bg-surface-2/30">
-                <Th className="pl-6 w-8"></Th>
+              <tr>
+                <Th className="pl-6 w-10"><span className="sr-only">Expand</span></Th>
                 <Th>Employee</Th>
                 <Th>Department</Th>
-                <Th align="right">Present</Th>
-                <Th align="right">Absent</Th>
-                <Th align="right">Late</Th>
-                <Th align="right" className="pr-6">OT Hours</Th>
+                <Th className={VALUE_COL}>Present</Th>
+                <Th className={VALUE_COL}>Absent</Th>
+                <Th className={VALUE_COL}>Late</Th>
+                <Th className={clsx(VALUE_COL, 'pr-6')}>Overtime</Th>
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={i} className="border-b border-border/40">
-                    {Array.from({ length: 7 }).map((_, j) => (
-                      <td key={j} className="px-6 py-4"><div className="skeleton h-5 w-20 ml-auto" /></td>
-                    ))}
-                  </tr>
-                ))
-              ) : (
-                empList.map((emp) => (
-                  <AttendanceRow
-                    key={emp._id}
-                    employee={emp}
-                    month={month}
-                    expanded={expandedId === emp._id}
-                    onToggle={() => toggle(emp._id)}
-                  />
-                ))
+              {loading ? <SkeletonRows cols={7} /> : empList.map((emp) => (
+                <AttendanceRow
+                  key={emp._id}
+                  employee={emp}
+                  month={month}
+                  expanded={expandedId === emp._id}
+                  onToggle={() => toggle(emp._id)}
+                  hidden={!isMatch(emp)}
+                />
+              ))}
+              {!loading && q && shown === 0 && (
+                <tr><td colSpan={7}>
+                  <EmptyState icon={SearchX} title="No matches" text={`Nothing matches “${q.trim()}”. Try another name or department.`} className="border-t border-line" />
+                </td></tr>
               )}
             </tbody>
           </table>
@@ -75,32 +85,13 @@ export default function Attendance() {
   );
 }
 
-function AttendanceRow({ employee, month, expanded, onToggle }) {
+function AttendanceRow({ employee, month, expanded, onToggle, hidden }) {
   const { data, loading } = useFetch(
     () => attendanceService.getMonthlySummary(employee._id, month),
     [employee._id, month]
   );
-  const initials = employee.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || '??';
-
-  if (loading) {
-    return (
-      <tr className="border-b border-border/40">
-        <td className="px-6 py-4 w-8" />
-        <td className="px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-accent-blue/20 flex items-center justify-center text-accent-blue text-[11px] font-heading font-semibold">
-              {initials}
-            </div>
-            <span className="text-[13.5px] text-white font-medium">{employee.name}</span>
-          </div>
-        </td>
-        <td className="px-6 py-4 text-[13px] text-text-secondary">{employee.department}</td>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <td key={i} className="px-6 py-4 text-right"><div className="skeleton h-5 w-10 ml-auto" /></td>
-        ))}
-      </tr>
-    );
-  }
+  // Filtered-out rows stay mounted (keeping their fetched data) but render nothing.
+  if (hidden) return null;
 
   const d = data || {};
   const records = d.records || [];
@@ -110,87 +101,82 @@ function AttendanceRow({ employee, month, expanded, onToggle }) {
       <tr
         onClick={onToggle}
         className={clsx(
-          'border-b border-border/40 cursor-pointer transition-colors',
-          expanded ? 'bg-accent-blue/5 border-accent-blue/20' : 'hover:bg-surface-2/50'
+          'border-t border-line cursor-pointer transition-colors',
+          expanded ? 'bg-primary-soft/60' : 'hover:bg-surface-2/50'
         )}
       >
-        <td className="pl-6 py-4 w-8 text-text-muted">
-          {expanded
-            ? <ChevronDown size={14} className="text-accent-blue" />
-            : <ChevronRight size={14} />}
+        <td className="pl-6 py-3.5 w-10 text-fg-3">
+          {expanded ? <ChevronDown size={16} className="text-primary-fg" /> : <ChevronRight size={16} />}
         </td>
-        <td className="px-4 py-4">
+        <td className="px-5 py-3.5">
           <div className="flex items-center gap-3">
-            <div className={clsx(
-              'w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-heading font-semibold shrink-0',
-              expanded ? 'bg-accent-blue/30 text-accent-blue' : 'bg-accent-blue/20 text-accent-blue'
-            )}>
-              {initials}
-            </div>
-            <span className="text-[13.5px] text-white font-medium truncate">{employee.name}</span>
+            <Avatar name={employee.name} size="sm" />
+            <span className="text-[15px] text-fg font-semibold truncate">{employee.name}</span>
           </div>
         </td>
-        <td className="px-6 py-4 text-[13px] text-text-secondary">{employee.department}</td>
-        <td className="px-6 py-4 text-right font-mono text-[13.5px] text-accent-teal tabular-nums font-medium">{d.present_days ?? 0}</td>
-        <td className="px-6 py-4 text-right font-mono text-[13.5px] tabular-nums font-medium"
-            style={{ color: (d.absent_days || 0) > 0 ? '#EF4444' : '#64748B' }}>
-          {d.absent_days ?? 0}
-        </td>
-        <td className="px-6 py-4 text-right font-mono text-[13.5px] tabular-nums font-medium"
-            style={{ color: (d.late_days || 0) > 0 ? '#F59E0B' : '#64748B' }}>
-          {d.late_days ?? 0}
-        </td>
-        <td className="px-6 py-4 pr-6 text-right font-mono text-[13.5px] text-text-secondary tabular-nums">
-          {(d.total_overtime_hours || 0).toFixed(1)}
-        </td>
+        <td className="px-5 py-3.5 text-[15px] text-fg-2">{employee.department}</td>
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <td key={i} className="pl-[46px] pr-5 py-3.5"><div className="skeleton h-4 w-14" /></td>
+          ))
+        ) : (
+          <>
+            <ValueCell>{d.present_days ?? 0} days</ValueCell>
+            <CountCell value={d.absent_days || 0} tone="danger" label="absent days" />
+            <CountCell value={d.late_days || 0} tone="warn" label="late days" />
+            <ValueCell className="pr-6" muted={!d.total_overtime_hours}>
+              {d.total_overtime_hours ? `${d.total_overtime_hours.toFixed(1)} h` : 'None'}
+            </ValueCell>
+          </>
+        )}
       </tr>
 
-      {expanded && (
-        <tr className="border-b border-border/40 bg-surface-2/20">
+      {expanded && !loading && (
+        <tr className="bg-surface-2/40">
           <td colSpan={7} className="px-6 py-5">
-            {/* Summary cards */}
-            <div className="flex flex-wrap gap-3 mb-5">
-              <StatCard icon={<UserCheck size={14} className="text-accent-teal" />} label="Present" value={d.present_days ?? 0} color="text-accent-teal" />
-              <StatCard icon={<UserX size={14} className="text-red-400" />} label="Absent" value={d.absent_days ?? 0} color="text-red-400" />
-              <StatCard icon={<AlertCircle size={14} className="text-amber-400" />} label="Late Days" value={d.late_days ?? 0} color="text-amber-400" />
-              <StatCard icon={<Clock size={14} className="text-accent-blue" />} label="OT Hours" value={(d.total_overtime_hours || 0).toFixed(1)} color="text-accent-blue" />
-              <StatCard icon={<Clock size={14} className="text-text-secondary" />} label="Late Minutes" value={d.total_late_minutes ?? 0} color="text-text-secondary" />
-              <StatCard icon={<Calendar size={14} className="text-text-secondary" />} label="Working Days" value={d.total_working_days ?? 0} color="text-text-secondary" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-5">
+              <MiniStat icon={UserCheck}    label="Present"       value={d.present_days ?? 0} />
+              <MiniStat icon={UserX}        label="Absent"        value={d.absent_days ?? 0} />
+              <MiniStat icon={AlarmClock}   label="Late days"     value={d.late_days ?? 0} />
+              <MiniStat icon={Clock}        label="Late minutes"  value={d.total_late_minutes ?? 0} />
+              <MiniStat icon={Timer}        label="Overtime hours" value={(d.total_overtime_hours || 0).toFixed(1)} />
+              <MiniStat icon={CalendarDays} label="Working days"  value={d.total_working_days ?? 0} />
             </div>
 
-            {/* Daily records table */}
             {records.length > 0 && (
-              <div className="rounded-lg border border-border/60 overflow-hidden">
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="bg-surface-2/50 border-b border-border/40">
-                      <th className="text-left px-4 py-2 text-text-muted font-heading font-semibold uppercase tracking-wide">Date</th>
-                      <th className="text-left px-4 py-2 text-text-muted font-heading font-semibold uppercase tracking-wide">Status</th>
-                      <th className="text-left px-4 py-2 text-text-muted font-heading font-semibold uppercase tracking-wide">Check In</th>
-                      <th className="text-left px-4 py-2 text-text-muted font-heading font-semibold uppercase tracking-wide">Check Out</th>
-                      <th className="text-right px-4 py-2 text-text-muted font-heading font-semibold uppercase tracking-wide">Late (min)</th>
-                      <th className="text-right px-4 py-2 text-text-muted font-heading font-semibold uppercase tracking-wide pr-4">OT (hrs)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {records.map((rec, i) => {
-                      const date = new Date(rec.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-                      const checkIn = rec.check_in ? new Date(rec.check_in).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—';
-                      const checkOut = rec.check_out ? new Date(rec.check_out).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—';
-                      const statusColor = rec.status === 'present' ? 'text-accent-teal' : rec.status === 'late' ? 'text-amber-400' : 'text-red-400';
-                      return (
-                        <tr key={i} className={clsx('border-b border-border/20', i % 2 === 0 ? 'bg-surface-1/30' : '')}>
-                          <td className="px-4 py-2 font-mono text-text-secondary">{date}</td>
-                          <td className={clsx('px-4 py-2 font-medium capitalize', statusColor)}>{rec.status}</td>
-                          <td className="px-4 py-2 font-mono text-text-secondary">{checkIn}</td>
-                          <td className="px-4 py-2 font-mono text-text-secondary">{checkOut}</td>
-                          <td className="px-4 py-2 text-right font-mono" style={{ color: rec.late_minutes > 0 ? '#F59E0B' : '#64748B' }}>{rec.late_minutes}</td>
-                          <td className="px-4 py-2 pr-4 text-right font-mono" style={{ color: rec.overtime_hours > 0 ? '#60A5FA' : '#64748B' }}>{rec.overtime_hours.toFixed(1)}</td>
+              <div className="rounded-xl border border-line bg-surface overflow-hidden">
+                <div className="max-h-[360px] overflow-y-auto">
+                  <table className="w-full text-[14.5px]">
+                    <thead className="sticky top-0">
+                      <tr>
+                        <Th>Date</Th>
+                        <Th>Status</Th>
+                        <Th>Check in</Th>
+                        <Th>Check out</Th>
+                        <Th align="right">Late (min)</Th>
+                        <Th align="right">Overtime (h)</Th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.map((rec, i) => (
+                        <tr key={i} className="border-t border-line">
+                          <td className="px-5 py-2.5 text-fg font-medium tnum whitespace-nowrap">
+                            {new Date(rec.date).toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })}
+                          </td>
+                          <td className="px-5 py-2.5"><StatusPill status={rec.status} /></td>
+                          <td className="px-5 py-2.5 text-fg-2 tnum">{fmtTime(rec.check_in)}</td>
+                          <td className="px-5 py-2.5 text-fg-2 tnum">{fmtTime(rec.check_out)}</td>
+                          <td className={clsx('px-5 py-2.5 text-right tnum', rec.late_minutes > 0 ? 'text-warn-fg font-semibold' : 'text-fg-3')}>
+                            {rec.late_minutes}
+                          </td>
+                          <td className={clsx('px-5 py-2.5 text-right tnum', rec.overtime_hours > 0 ? 'text-fg font-semibold' : 'text-fg-3')}>
+                            {rec.overtime_hours.toFixed(1)}
+                          </td>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </td>
@@ -200,26 +186,79 @@ function AttendanceRow({ employee, month, expanded, onToggle }) {
   );
 }
 
-function StatCard({ icon, label, value, color }) {
+function fmtTime(t) {
+  return t ? new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—';
+}
+
+/*
+ * Present / Absent / Late / Overtime share one fixed width and one text
+ * start (cell padding + an 18px icon slot + gap = 46px), so the gaps
+ * between them are even and every value lines up under its heading.
+ */
+const VALUE_COL = 'w-[150px] pl-[46px]';
+
+function IconSlot({ children }) {
+  return <span className="w-[18px] shrink-0 flex justify-center">{children}</span>;
+}
+
+function ValueCell({ children, muted, className }) {
   return (
-    <div className="flex items-center gap-2 bg-surface-1 border border-border rounded-lg px-4 py-2.5 min-w-[110px]">
-      {icon}
-      <div>
-        <div className={clsx('text-[15px] font-semibold font-mono tabular-nums', color)}>{value}</div>
-        <div className="text-[10px] text-text-muted uppercase tracking-wide font-heading">{label}</div>
-      </div>
-    </div>
+    <td className={clsx('pl-5 pr-5 py-3.5', className)}>
+      <span className="flex items-center gap-2 whitespace-nowrap">
+        <IconSlot />
+        <span className={clsx('text-[15px] tnum', muted ? 'text-fg-3' : 'font-semibold text-fg')}>{children}</span>
+      </span>
+    </td>
   );
 }
 
-function Th({ children, align = 'left', className }) {
+/** Absent / late days at or above this count get a warning sign. */
+const FLAG_AT = 3;
+
+/**
+ * Absent / late count written out in words ("None", "1 day", "4 days").
+ * Counts at or above FLAG_AT get a warning icon and bold text. The icon
+ * has its own fixed slot so every line in the column starts at the same place.
+ */
+function CountCell({ value, tone, label }) {
+  const flagged = value >= FLAG_AT;
   return (
-    <th className={clsx(
-      'text-[11px] font-heading font-semibold text-text-secondary uppercase tracking-[0.1em] px-6 py-3',
-      align === 'right' && 'text-right',
-      className
-    )}>
-      {children}
-    </th>
+    <td className="pl-5 pr-5 py-3.5" aria-label={`${value} ${label}${flagged ? ', needs attention' : ''}`}>
+      <span className="flex items-center gap-2 whitespace-nowrap">
+        <IconSlot>
+          {flagged && (
+            <AlertTriangle
+              size={18}
+              strokeWidth={2.25}
+              className={tone === 'danger' ? 'text-danger-fg' : 'text-warn-fg'}
+            />
+          )}
+        </IconSlot>
+        {value === 0 ? (
+          <span className="text-[15px] text-fg-3">None</span>
+        ) : (
+          <span className={clsx('text-[15px] tnum', flagged ? 'font-bold text-fg' : 'text-fg-2')}>
+            {value} {value === 1 ? 'day' : 'days'}
+          </span>
+        )}
+      </span>
+    </td>
+  );
+}
+
+function StatusPill({ status }) {
+  if (status === 'present') return <Pill tone="good" dot>Present</Pill>;
+  if (status === 'late') return <Pill tone="warn" dot>Late</Pill>;
+  return <Pill tone="danger" dot className="capitalize">{status}</Pill>;
+}
+
+function MiniStat({ icon: Icon, label, value }) {
+  return (
+    <div className="bg-surface border border-line rounded-xl px-4 py-3">
+      <div className="flex items-center gap-1.5 text-fg-3 text-[13.5px] font-medium">
+        <Icon size={13} strokeWidth={2} /> {label}
+      </div>
+      <div className="text-[20.5px] font-extrabold text-fg mt-1 tnum">{value}</div>
+    </div>
   );
 }

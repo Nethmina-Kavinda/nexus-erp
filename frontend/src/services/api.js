@@ -31,6 +31,10 @@ export const authService = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (data) => api.post('/auth/register', data),
   getMe: () => api.get('/auth/me'),
+  updateMe: (data) => api.put('/auth/me', data),
+  getActivity: () => api.get('/auth/me/activity'),
+  changePassword: (current_password, new_password) =>
+    api.put('/auth/password', { current_password, new_password }),
 };
 
 export const employeeService = {
@@ -39,6 +43,14 @@ export const employeeService = {
   create: (data) => api.post('/employees', data),
   update: (id, data) => api.put(`/employees/${id}`, data),
   delete: (id) => api.delete(`/employees/${id}`),
+  resetPassword: (id, password) => api.put(`/employees/${id}/password`, { password }),
+};
+
+export const departmentService = {
+  getAll: () => api.get('/departments'),
+  create: (data) => api.post('/departments', data),
+  update: (id, data) => api.put(`/departments/${id}`, data),
+  delete: (id, moveTo) => api.delete(`/departments/${id}`, { params: { move_to: moveTo || undefined } }),
 };
 
 export const attendanceService = {

@@ -76,18 +76,18 @@ Installs all Node and Python dependencies and creates `backend/.env` from the ex
 mongod --dbpath C:/data/db
 
 # 2. Backend
-cd backend
-npm install
-cp ../.env.example .env      # edit with your values
-npm run seed                 # seeds all collections (~3s for 100 employees)
-npm run dev                  # → http://localhost:5001
+cd backend   # execute in a new terminal
+npm install                   # done 
+cp ../.env.example .env      # edit with your values : done
+npm run seed                 # seeds all collections (~3s for 100 employees) : done
+npm run dev                  # → http://localhost:5001 : execute 
 
 # 3. ML Service
-cd ml-service
-python -m venv venv
-venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-python app.py                # → http://127.0.0.1:5000
+cd ml-service  # execute 
+python -m venv venv  
+venv\Scripts\activate        #  execute 
+pip install -r requirements.txt # done
+python app.py                # → http://127.0.0.1:5000 execute 
 
 # 4. Train both model stages (run once after seeding)
 curl -X POST http://127.0.0.1:5000/train -H "Content-Type: application/json" -d "{\"stage\":\"stage_1\"}"
@@ -95,7 +95,7 @@ curl -X POST http://127.0.0.1:5000/train -H "Content-Type: application/json" -d 
 
 # 5. Frontend
 cd frontend
-npm install
+npm install # done
 npm run dev                  # → http://localhost:3000
 ```
 
