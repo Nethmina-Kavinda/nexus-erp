@@ -99,15 +99,6 @@ npm install # done
 npm run dev                  # → http://localhost:3000
 ```
 
-### Demo credentials
-
-| Role | Email | Password |
-|---|---|---|
-| Admin | kavinda@nexus.lk | nexus123 |
-| HR Manager | malini@nexus.lk | nexus123 |
-
----
-
 ## Running the Application (Day-to-Day)
 
 Once `setup.bat` (or the manual setup) has been run **once**, starting the system for normal use only requires 4 terminals — no reinstall, no re-seed, no retrain.
